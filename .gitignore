@@ -7,6 +7,7 @@ src/slibu.egg-info/
 __pycache__
 .idea/
 *.egg-info/
+settings.json
 
 # To protect against people accidentally running in this directory
 out.pptx

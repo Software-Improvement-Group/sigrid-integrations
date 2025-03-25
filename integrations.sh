@@ -50,6 +50,10 @@ if [ "$MATCH_FOUND" = false ]; then
     usage
 fi
 
+if [ -z ${DO_NOT_PULL} ]; then
+    docker pull softwareimprovementgroup/sigrid-integrations
+fi
+
 docker run -it --rm \
     -e SIGRID_CI_TOKEN="$SIGRID_CI_TOKEN" \
     -v "$WORKING_DIR":/home/sigrid \
