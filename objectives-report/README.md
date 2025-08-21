@@ -4,6 +4,12 @@ This script generates a number of charts that depict progress towards your Sigri
 
 These charts are mostly about tracking progress across your portfolio, over longer periods of time. The charts are intended to be incorporated into your existing reporting structure. The data is obtained using the [Sigrid REST API](https://docs.sigrid-says.com/integrations/sigrid-api-documentation.html), which is used to determine the status and trend for your Sigrid portfolio.
 
+----
+
+**This report is deprecated. SIG now provides a standardized [report generator](../report-generator/README.md), which also supports an objectives report. This standalone report will eventually be removed in favor of the Report Generator.**
+
+----
+
 ## Prerequisites
 
 You will need the following to use this script.

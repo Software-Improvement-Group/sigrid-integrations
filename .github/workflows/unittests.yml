@@ -4,6 +4,8 @@ jobs:
   unittests:
     name: "Python unit tests"
     runs-on: ubuntu-latest
+    env:
+      REPORT_GENERATOR_TESTS_TOKEN: ${{ secrets.SIGRID_CI_TOKEN }}
     steps:
       - name: "Check out repository"
         uses: actions/checkout@v4

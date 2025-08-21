@@ -14,13 +14,14 @@
 
 from typing import Callable, Tuple
 
-from pptx import Presentation
 from pptx.chart.data import ChartData
+from pptx.presentation import Presentation
 from pptx.slide import Slide
 
 from report_generator.generator import report_utils
 from report_generator.generator.data_models import osh_data
 from report_generator.generator.placeholders import Placeholder
+from report_generator.generator.placeholders.base import PlaceholderDocType
 
 
 def _format_chart_data(data) -> Tuple[ChartData, ChartData]:
@@ -42,7 +43,7 @@ def _format_chart_data(data) -> Tuple[ChartData, ChartData]:
     chart_data2.add_series("Low risk", [data.freshness_risks[3], data.stability_risks[3], data.mgmt_risks[3],
                                         data.activity_risks[3]])
 
-    return (chart_data, chart_data2)
+    return chart_data, chart_data2
 
 
 def _determine_chart_axis_max():
@@ -67,7 +68,9 @@ def _set_chart_data_and_axis(chart, data, axis_max):
 
 
 class OSHSlidePlaceholder(Placeholder):
+    """Traditional SIG OSH system-level slide, with risk bar charts for all 6 OSH metrics."""
     key = "OSH_SLIDE"
+    __doc_type__ = PlaceholderDocType.CHART
 
     @classmethod
     def value(cls, parameter=None):

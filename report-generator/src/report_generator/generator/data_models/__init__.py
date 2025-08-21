@@ -14,4 +14,8 @@
 
 from .architecture import architecture_data
 from .maintainability import maintainability_data
+from .modernization import modernization_data
+from .objectives import objectives_data
 from .osh import osh_data
+from .refactoring_candidates import refactoring_candidates_data
+from .system_metadata import system_metadata

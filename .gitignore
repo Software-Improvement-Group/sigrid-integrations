@@ -8,8 +8,12 @@ __pycache__
 .idea/
 *.egg-info/
 settings.json
+out/
 
 # To protect against people accidentally running in this directory
 out.pptx
 out.docx
+test_output.pptx
+test_output.docx
 ~$*.*
+issue-tracker-export/.sigrid/

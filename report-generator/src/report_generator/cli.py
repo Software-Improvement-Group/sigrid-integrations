@@ -14,72 +14,103 @@
 
 import logging
 import os
+from datetime import date
 from typing import Optional
 
 import click
 import requests
+from dateutil.relativedelta import relativedelta
 
 from report_generator import presets
 from report_generator.generator import ReportGenerator, sigrid_api
 
+DEFAULT_START_DATE = (date.today() + relativedelta(months=-1)).strftime('%Y-%m-%d')
+DEFAULT_END_DATE = date.today().strftime('%Y-%m-%d')
 MATOMO_URL = os.environ.get('MATOMO_URL', 'https://sigrid-says.com/usage')
+
+
+def _validate_system_requirement(ctx, _, value):
+    layout = ctx.params.get('layout')
+
+    system_required = layout in presets.SYSTEM_LEVEL_PRESETS
+    system_provided = value is not None
+
+    if system_required and not system_provided:
+        system_presets = ', '.join(sorted(presets.SYSTEM_LEVEL_PRESETS))
+        raise click.BadParameter(
+            f"System is required when using layout '{layout}' "
+            f"(required for: {system_presets})"
+        )
+    elif layout is not None and not system_required and system_provided:
+        raise click.BadParameter(
+            f"System is not allowed when using layout '{layout}' "
+            f"(only required for: {', '.join(presets.SYSTEM_LEVEL_PRESETS)})"
+        )
+
+    return value
+
+
+def _validate_layout_or_template(ctx, param, value):
+    if param.name == 'template':
+        layout = ctx.params.get('layout')
+        template = value
+
+        if template and layout:
+            raise click.BadParameter(
+                "Both a layout and template are defined. Choose either a predefined layout using -l/--layout, or provide your own report template using -p/--template. Not both"
+            )
+
+    return value
 
 
 @click.command()
 @click.option('-d', '--debug', is_flag=True, default=False, help='Enable debug messages')
 @click.option('-c', '--customer', required=True, help='Customer name')
-@click.option('-s', '--system', required=True, help='System name')
+@click.option('-s', '--system', required=False, callback=_validate_system_requirement,
+              help='System name (required for: ' + ', '.join(presets.SYSTEM_LEVEL_PRESETS) + ')')
 @click.option('-t', '--token', default=lambda: os.environ.get('SIGRID_CI_TOKEN'),
               help='Sigrid CI token for this customer')
 @click.option('-l', '--layout', type=click.Choice(presets.ids),
               default='default',
               help='The type of report (mutually exclusive with the -p/--template option)')
-@click.option('-p', '--template', type=click.File('rb'),
+@click.option('-p', '--template', type=click.File('rb'), callback=_validate_layout_or_template,
               help='A custom report template file (mutually exclusive with the -l/--layout option)')
+@click.option('--start', default=DEFAULT_START_DATE, help='Report start date in yyyy-mm-dd, default is last month.')
 @click.option('-o', '--out-file', default='out', help='write output to this file (default out.pptx/docx)')
 @click.option('-a', '--api-url', default=None,
               help=f'Sigrid API base URL, will default to {sigrid_api.DEFAULT_BASE_URL} if not provided')
-@click.pass_context
-def run(ctx, debug, customer, system, token, layout, template, out_file, api_url):
+def run(debug, customer, system, token, layout, template, start, out_file, api_url):
     _configure_logging(debug)
-    _configure_api(customer, system, token, api_url)
-    _record_usage_statistics()
-    if not _require_either_layout_or_template(layout, template):
-        return
+    _configure_api(customer, system, token, (start, DEFAULT_END_DATE), api_url)
+    _record_usage_statistics(layout, customer)
 
     if template:
-        ReportGenerator(template).generate(out_file)
+        ReportGenerator(template.name).generate(out_file)
         return
 
     presets.run(layout, out_file)
 
 
-def _configure_api(customer: str, system: str, token: str, api_url: Optional[str]):
+def _configure_api(customer: str, system: str, token: str, period: tuple[str, str], api_url: Optional[str]):
     sigrid_api.set_context(
         bearer_token=token,
         customer=customer,
         system=system,
+        period=period,
         base_url=api_url
     )
 
 
-def _require_either_layout_or_template(layout, template):
-    if layout == 'default' and template is None:
-        logging.info("No layout or template defined. Using default layout")
-        return True
-    if layout is not None and layout != 'default' and template is not None:
-        logging.error(
-            "Both a layout and template are defined. Choose either a predefined layout using -l/--layout, or provide your own report template using -p/--template. Not both")
-        return False
-    return True
+def _record_usage_statistics(layout, customer):
+    if os.environ.get('SIGRID_REPORT_GENERATOR_RECORD_USAGE', '1') == '0':
+        logging.info("Not recording usage statistics")
+        return
 
-
-def _record_usage_statistics():
-    user = os.environ.get('USER', 'unknown')
     try:
+        report_type = layout.replace("-", "") if layout else ""
         requests.get(
-            f"{MATOMO_URL}matomo.php?idsite=5&rec=1&ca=1&e_c=consultancy&e_a=report-generator&e_n={user}&uid={user}")
-    except requests.exceptions.ConnectionError as e:
+            f"{MATOMO_URL}/matomo.php?idsite=5&rec=1&ca=1&e_c=reportgenerator&e_a={report_type}&e_n={customer}")
+    except requests.exceptions.ConnectionError:
         logging.warning(f"Failed to connect to {MATOMO_URL} for registering usage statistics (not harmful).")
 
 

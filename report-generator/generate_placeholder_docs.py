@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+
+#  Copyright Software Improvement Group
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+from typing import List, Optional, Set
+
+import pandas as pd
+
+from report_generator.generator.placeholders import Placeholder, placeholders as all_placeholders
+from report_generator.generator.placeholders.base import ParameterList, PlaceholderDocType
+from report_generator.generator.report import ReportType
+
+FILENAME = "docs/placeholder descriptions.md"
+PARAM_RANGE_REPRESENTATIONS = {
+    '1, 2, 3, 4, 5'                : '1-5',
+    '1, 2, 3, 4, 5, 6, 7, 8, 9, 10': '1-10',
+}
+
+
+class MarkdownElement:
+    def __init__(self, content):
+        self.content = content
+
+    def __str__(self):
+        return self.content + '\n\n'
+
+
+class Header(MarkdownElement):
+    def __init__(self, content: str, level=2):
+        super().__init__('#' * level + ' ' + content)
+
+
+class Paragraph(MarkdownElement):
+    def __init__(self, content: str):
+        super().__init__(content)
+
+
+class Steps(MarkdownElement):
+    def __init__(self, steps: List[str]):
+        content = '\n'.join(f"{i + 1}. {step}" for i, step in enumerate(steps))
+        super().__init__(content)
+
+
+class Table(MarkdownElement):
+    def __init__(self, data: pd.DataFrame):
+        data.fillna("")
+
+        if 'Parameters' in data.columns and data['Parameters'].str.strip().eq('').all():
+            data = data.drop(columns=['Parameters'])
+
+        super().__init__(data.to_markdown(index=False))
+
+
+class Document:
+    def __init__(self):
+        self.elements: List[MarkdownElement] = []
+
+    def add(self, element: MarkdownElement):
+        self.elements.append(element)
+
+    def __str__(self):
+        return ''.join(str(element) for element in self.elements)
+
+
+def placeholders_to_table(placeholders, skip_columns: Set[str] = None) -> pd.DataFrame:
+    data = [get_placeholder_row_data(placeholder, skip_columns) for placeholder in placeholders]
+
+    df = pd.DataFrame(data)
+    df = df.sort_values(by='Key').reset_index(drop=True)
+    return df
+
+
+def get_placeholder_doc(placeholder_class: Placeholder) -> Optional[str]:
+    doc = placeholder_class.__doc__
+    if doc and not doc.startswith('Placeholder('):
+        return doc
+
+    # noinspection PyUnresolvedReferences
+    for parent in placeholder_class.__bases__:
+        if issubclass(parent, Placeholder):
+            # noinspection PyTypeChecker
+            return get_placeholder_doc(parent)
+
+    return None
+
+
+def get_placeholder_row_data(placeholder: Placeholder, skip_columns: Set[str] = None) -> dict:
+    if skip_columns is None:
+        skip_columns = []
+
+    # noinspection PyUnresolvedReferences
+    all_data = {
+        'Key'        : '`' + placeholder.key + '`',
+        'Supports'   : supports_to_representation(placeholder),
+        'Description': get_placeholder_doc(placeholder),
+        'Parameters' : parameterlist_to_representation(
+            placeholder.allowed_parameters) if placeholder.is_parameterized() else ''
+    }
+
+    return {key: value for key, value in all_data.items() if key not in skip_columns}
+
+
+def parameterlist_to_representation(parameter_list: ParameterList) -> str:
+    as_string = ', '.join(str(param) for param in parameter_list)
+    if as_string in PARAM_RANGE_REPRESENTATIONS:
+        return PARAM_RANGE_REPRESENTATIONS[as_string]
+
+    return f"<details><summary>Show parameters</summary><p>{as_string}</p></details>"
+
+
+def supports_to_representation(placeholder: Placeholder) -> str:
+    support_mappings = {
+        ReportType.PRESENTATION: "PPTX",
+        ReportType.DOCUMENT    : "DOCX",
+    }
+
+    supported_types = [support_mappings[report_type] for report_type in support_mappings if
+                       placeholder.supports(report_type)]
+
+    return ', '.join(supported_types)
+
+
+def add_text_placeholders_section(doc: Document):
+    doc.add(Header("Text Placeholders"))
+    doc.add(Paragraph(
+        "Use these placeholders anywhere in your PowerPoint/Word template. `report-generator` will replace them with their actual value."))
+    text_placeholders = [placeholder for placeholder in all_placeholders if
+                         placeholder.__doc_type__ == PlaceholderDocType.TEXT]
+    doc.add(Table(placeholders_to_table(text_placeholders, skip_columns={"Supports"})))
+
+
+def add_chart_placeholders_section(doc: Document):
+    doc.add(Header("Chart Placeholders"))
+    doc.add(Paragraph(
+        "These placeholders, generally placed off-screen, only serve to identify a slide on which a specific chart is placed. If you want to use this chart, be sure to copy both the chart and the placeholder from a standard template and then modify its layout BUT NOT its structure or chart type."))
+    chart_placeholders = [placeholder for placeholder in all_placeholders if
+                          placeholder.__doc_type__ == PlaceholderDocType.CHART]
+    doc.add(Table(placeholders_to_table(chart_placeholders)))
+
+
+def add_table_placeholders_section(doc: Document):
+    doc.add(Header("Dynamic Table Placeholders"))
+    doc.add(Paragraph(
+        "These placeholders are used for filling tables with a dynamic number of rows and flexible styles. Currently, they are only supported in PowerPoint templates."))
+    doc.add(Paragraph(
+        "To use these placeholders, create a table in your PowerPoint template and rename it in the selection pane (instructions below) to match the placeholder key. Define text styles in the first row of the table."))
+    doc.add(Paragraph(
+        "The number of rows of the generated table is minimally the number of rows in the data source and maximally the number of rows in the template table."))
+    table_placeholders = [placeholder for placeholder in all_placeholders if
+                          placeholder.__doc_type__ == PlaceholderDocType.TABLE]
+    doc.add(Table(placeholders_to_table(table_placeholders, skip_columns={"Supports"})))
+
+
+def add_other_placeholders_section(doc: Document):
+    doc.add(Header("Other Placeholders"))
+    other_placeholders = [placeholder for placeholder in all_placeholders if
+                          placeholder.__doc_type__ == PlaceholderDocType.OTHER]
+    doc.add(Table(placeholders_to_table(other_placeholders)))
+
+
+def add_how_to_section(doc: Document):
+    doc.add(Header("How to: Enter Placeholder Key in Selection Pane"))
+    doc.add(Paragraph(
+        "Some placeholders require you to enter their key in the selection pane of PowerPoint. To do this, follow these steps:"))
+    doc.add(Steps([
+        "Open the selection pane in PowerPoint by going to the 'Home' tab, clicking on 'Select', and then choosing 'Selection Pane'.",
+        "In the selection pane, find the object you want to rename (e.g., a chart or table).",
+        "Click on the name of the object to edit it.",
+        "Enter the placeholder key exactly as specified in the documentation (e.g., 'REFACTORING_CANDIDATES_TABLE_DUPLICATION').",
+        "Press Enter to confirm the changes."
+    ]))
+
+
+def generate_documentation():
+    doc = Document()
+    doc.add(Header("Report Template Placeholders", level=1))
+
+    add_text_placeholders_section(doc)
+    add_chart_placeholders_section(doc)
+    add_table_placeholders_section(doc)
+    add_other_placeholders_section(doc)
+    add_how_to_section(doc)
+
+    return str(doc)
+
+
+def write_markdown_file(content, filename):
+    with open(filename, "w") as f:
+        f.write(content)
+    print(f"Placeholder documentation has been generated in '{filename}'")
+
+
+if __name__ == "__main__":
+    markdown_content = generate_documentation()
+    write_markdown_file(markdown_content, FILENAME)

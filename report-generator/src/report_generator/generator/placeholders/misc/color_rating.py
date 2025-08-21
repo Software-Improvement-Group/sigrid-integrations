@@ -15,20 +15,18 @@
 from abc import ABC
 from typing import Callable
 
-from pptx import Presentation
+from pptx.presentation import Presentation
 
-from report_generator.generator import constants, report_utils
+from report_generator.generator import report_utils
+from report_generator.generator.constants import ArchMetric, ArchSubcharacteristic, MaintMetric, MetricEnum
 from report_generator.generator.data_models import architecture_data, maintainability_data
 from report_generator.generator.formatters import formatters
-from report_generator.generator.placeholders.base import Parameter, ParameterizedPlaceholder
-
-
-def _to_json_name(metric):
-    metric = metric.replace("_", " ").title().replace(" ", "")
-    return metric[0].lower() + metric[1:]
+from report_generator.generator.placeholders.base import ParameterizedPlaceholder
 
 
 class _AbstractColorRatingPlaceholder(ParameterizedPlaceholder, ABC):
+    """Fills this rating value, but also colors the shape the placeholder is in to correspond to the correct maintainability rating color (e.g. yellow for 3 stars)."""
+
     @classmethod
     def resolve_pptx(cls, presentation: Presentation, key: str, value_cb: Callable):
         shapes = report_utils.pptx.find_shapes_with_text(presentation, key)
@@ -50,19 +48,19 @@ class _AbstractColorRatingPlaceholder(ParameterizedPlaceholder, ABC):
 
 class ArchColorRatingPlaceholder(_AbstractColorRatingPlaceholder):
     key = "COLOR_ARCH_RATING_{parameter}"
-    allowed_parameters = constants.ARCH_METRICS + constants.ARCH_SUBCHARACTERISTICS
+    allowed_parameters = list(ArchMetric) + list(ArchSubcharacteristic)
 
     @classmethod
-    def value(cls, metric: Parameter = None):
-        metric_key = _to_json_name(metric)
+    def value(cls, metric: MetricEnum = None):
+        metric_key = metric.to_json_name()
         return architecture_data.get_score_for_prop_or_subchar(metric_key)
 
 
 class MaintColorRatingPlaceholder(_AbstractColorRatingPlaceholder):
     key = "COLOR_MAINT_RATING_{parameter}"
-    allowed_parameters = constants.MAINT_METRICS
+    allowed_parameters = list(MaintMetric)
 
     @classmethod
-    def value(cls, metric: Parameter = None):
-        metric_key = _to_json_name(metric)
+    def value(cls, metric: MetricEnum = None):
+        metric_key = metric.to_json_name()
         return maintainability_data.data[metric_key]

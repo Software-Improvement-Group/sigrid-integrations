@@ -11,8 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-from report_generator.generator.formatters import *
+from report_generator.generator.formatters import formatters
 
 
 class TestFormatter:
@@ -23,7 +22,7 @@ class TestFormatter:
         assert formatters.calculate_stars(4.5) == "★★★★★"
         assert formatters.calculate_stars(7.5) == "★★★★★"
         assert formatters.calculate_stars(-3) == ""
-        
+
         formatters.use_sig_sterren()
         assert formatters.calculate_stars(1.5) == "HHIII"
         assert formatters.calculate_stars(1.499999) == "HIIII"
@@ -38,3 +37,11 @@ class TestFormatter:
         assert formatters.maintainability_round(5.4) == "5.4"
 
         assert formatters.maintainability_round(3.284) == "3.2"
+
+    def test_format_diff(self):
+        assert formatters.format_diff(None, None) == ""
+        assert formatters.format_diff(None, 1.0) == ""
+        assert formatters.format_diff(1.0, None) == ""
+        assert formatters.format_diff(1.0, 1.0) == "="
+        assert formatters.format_diff(1.0, 1.2) == "+ 0.2"
+        assert formatters.format_diff(1.2, 1.0) == "- 0.2"

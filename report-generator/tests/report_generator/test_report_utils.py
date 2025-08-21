@@ -13,6 +13,7 @@
 #  limitations under the License.
 
 from pptx.oxml.text import CT_TextParagraph
+# noinspection PyProtectedMember
 from pptx.text.text import _Paragraph
 
 from report_generator.generator import report_utils
@@ -31,9 +32,9 @@ class TestReportUtils:
         r2.text = "noot"
         f2 = r2.font
         f2.bold = True
-        
+
         report_utils.pptx.merge_runs_with_same_formatting(p)
-        
+
         assert len(p.runs) == 1
         assert p.text == "aapnoot"
 
@@ -47,7 +48,7 @@ class TestReportUtils:
         f1.bold = True
         f2 = r2.font
         f2.bold = False
-        
+
         report_utils.pptx.merge_runs_with_same_formatting(p)
 
         assert len(p.runs) == 2

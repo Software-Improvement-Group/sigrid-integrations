@@ -16,12 +16,13 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from enum import Enum
 from typing import Iterable, Union
 
 from report_generator.generator.report import Report, ReportType
 from report_generator.generator.sigrid_api import SigridAPIRequestFailed
 
-Parameter = Union[str, int]
+Parameter = Union[str, int, Enum]
 ParameterList = Iterable[Parameter]
 
 CAMEL_TO_SNAKE_PATTERN = re.compile(r'(?<!^)(?=[A-Z][a-z])|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])')
@@ -35,10 +36,18 @@ def function_name_to_placeholder_key(function_name: str):
     return function_name.upper()
 
 
+class PlaceholderDocType(Enum):
+    TEXT = 'Text'
+    CHART = 'Chart'
+    TABLE = 'Table'
+    OTHER = 'Other'
+
+
 @dataclass
 class Placeholder(ABC):
-    __placeholder__ = True
     key: str
+    __doc_type__: PlaceholderDocType = PlaceholderDocType.OTHER
+    __placeholder__ = True
 
     @classmethod
     @abstractmethod
@@ -56,6 +65,8 @@ class Placeholder(ABC):
             getattr(cls, resolve_method_name)(report, cls.key, cls.value)
         except SigridAPIRequestFailed as e:
             logging.info(f'Failed to resolve {cls.key}: {e}')
+        except (KeyError, AttributeError, ValueError) as e:
+            logging.warning(f'Failed to resolve {cls.key}: Value not found ({type(e).__name__}: {e})')
 
     @classmethod
     def _determine_resolve_method(cls, report_type: ReportType):
@@ -69,6 +80,10 @@ class Placeholder(ABC):
     @classmethod
     def supports(cls, report_type: ReportType) -> bool:
         return cls._determine_resolve_method(report_type) is not None
+
+    @classmethod
+    def is_parameterized(cls):
+        return getattr(cls, '__parameterized_placeholder__', False)
 
 
 class ParameterizedPlaceholder(Placeholder, ABC):

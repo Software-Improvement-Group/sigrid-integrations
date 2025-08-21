@@ -12,11 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import logging
 from functools import cached_property
 
 import dateutil.parser
 
 from report_generator.generator import sigrid_api
+from report_generator.generator.constants import OSHMetric
 
 
 class _AnonDataClass:
@@ -25,6 +27,8 @@ class _AnonDataClass:
     date_day = ""
     date_month = ""
     date_year = ""
+
+    ratings = {}
 
     # critical, high, medium, low, no risk
     vuln_risks = [0, 0, 0, 0, 0]
@@ -42,6 +46,7 @@ class _AnonDataClass:
 
 
 class OSHData:
+
     @cached_property
     def raw_data(self):
         return sigrid_api.get_osh_findings()
@@ -70,7 +75,24 @@ class OSHData:
             self._assign_risk(data.activity_risks,
                               self._find_cyclonedx_property_value(component["properties"], "sigrid:risk:activity"))
 
+        try:
+            for prop in OSHMetric:
+                data.ratings[prop.value.lower()] = self.get_rating_from_data(raw_data, prop.to_json_name())
+        except KeyError:
+            logging.warning("No OSH ratings found in API response. Not populating OSH ratings slide")
+
         return data
+
+    @staticmethod
+    def get_rating_from_data(raw_data, rating_name):
+        for prop in raw_data['metadata']['properties']:
+            if prop["name"] == f"sigrid:ratings:{rating_name}":
+                return float(prop["value"])
+        return None
+
+    def get_score_for_prop(self, prop):
+        return self.data.ratings[prop] if prop in self.data.ratings else \
+            0.0
 
     @property
     def vulnerability_summary(self):
@@ -85,7 +107,7 @@ class OSHData:
     @property
     def freshness_summary(self):
         total_outdated = sum(self.data.freshness_risks[
-                             0:3])  # Only count critial+high+medium risk. Llow is fresh enough to not report on
+                                 0:3])  # Only count critial+high+medium risk. Llow is fresh enough to not report on
         if total_outdated > 0:
             pct_outdated = max(total_outdated / self.data.total_deps, 0.01)
             return f"{pct_outdated:.0%} of dependencies ({total_outdated} in total) used in the system have not been updated for over 2 years."
@@ -95,7 +117,7 @@ class OSHData:
     @property
     def legal_summary(self):
         total_legal = sum(self.data.license_risks[
-                          0:3])  # Only count critial, high, and medium. Low license risk is typically not restrictive, so not interesting to report on
+                              0:3])  # Only count critial, high, and medium. Low license risk is typically not restrictive, so not interesting to report on
         if total_legal > 0:
             pct_legal = max(total_legal / self.data.total_deps, 0.01)
             return f"{pct_legal:.0%} of dependencies ({total_legal} in total) uses a potentially restrictive open-source license (e.g. GPL/AGPL)."

@@ -11,6 +11,7 @@ You will need the following to use this script.
 - The script requires Python 3.9+.
 - You will need a valid [API token](https://docs.sigrid-says.com/organization-integration/authentication-tokens.html) to access the [Sigrid REST API](https://docs.sigrid-says.com/integrations/sigrid-api-documentation.html).
 - Your API token should be available to the script as the environment variable `SIGRID_CI_TOKEN`.
+- Architecture Quality needs to be enabled for your system. Architecture Quality Enabled is the default option, some clients have systems where they have chosen to set this to false.
 
 ## Retrieving your current Sigrid scope configuration file 
 

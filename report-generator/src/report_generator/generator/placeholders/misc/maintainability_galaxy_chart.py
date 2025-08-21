@@ -12,23 +12,26 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from pptx import Presentation
 from pptx.chart.data import XyChartData
+from pptx.presentation import Presentation
 
 from report_generator.generator import report_utils
-from report_generator.generator.data_models import maintainability_data
+from report_generator.generator.data_models import maintainability_data, system_metadata
 from report_generator.generator.placeholders import Placeholder
+from report_generator.generator.placeholders.base import PlaceholderDocType
 
 
 class MaintainabilityGalaxyChartPlaceholder(Placeholder):
+    """Traditional SIG benchmark galaxy chart."""
     key = "GALAXY_SLIDE"
+    __doc_type__ = PlaceholderDocType.CHART
 
     @classmethod
     def value(cls, parameter=None):
         pass
 
     @staticmethod
-    def resolve_pptx(presentation: Presentation, key: str, value_cb) -> None:
+    def resolve_pptx(presentation: Presentation, key: str, _) -> None:
         charts = []
 
         for slide in report_utils.pptx.identify_specific_slide(presentation, key):
@@ -41,7 +44,7 @@ class MaintainabilityGalaxyChartPlaceholder(Placeholder):
 
         volume = maintainability_data.system_py
         maint_rating = maintainability_data.maintainability_rating
-        system_name = maintainability_data.system_name
+        system_name = system_metadata.display_name
 
         chart_data = XyChartData()
         series = chart_data.add_series("Series 1")

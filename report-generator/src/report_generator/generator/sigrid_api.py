@@ -18,12 +18,16 @@ from typing import Optional
 
 import requests
 
+from report_generator.generator.constants import MaintMetric
+from report_generator.generator.report_utils.time_series import Period
+
 DEFAULT_BASE_URL = "https://sigrid-says.com"
 BASE_ANALYSIS_RESULTS_ENDPOINT = "analysis-results/api/v1"
 
 _bearer_token: Optional[str] = None
 _customer: Optional[str] = None
 _system: Optional[str] = None
+_period: Optional[tuple[str, str]] = None
 _rest_url: Optional[str] = None
 
 
@@ -44,10 +48,11 @@ def set_context(
         bearer_token: Optional[str] = None,
         customer: Optional[str] = None,
         system: Optional[str] = None,
+        period: Optional[tuple[str, str]] = None,
         base_url: Optional[str] = None
 ) -> None:
     """Set the context values. Only updates provided values. Sets base_url to default if not provided."""
-    global _bearer_token, _customer, _system, _rest_url
+    global _bearer_token, _customer, _system, _period, _rest_url
 
     if bearer_token is not None:
         _test_sigrid_token(bearer_token)
@@ -58,6 +63,9 @@ def set_context(
 
     if system is not None:
         _system = system
+
+    if period is not None:
+        _period = period
 
     _rest_url = f"{base_url or DEFAULT_BASE_URL.rstrip('/')}/rest"
 
@@ -83,9 +91,25 @@ def reset_context(
         _rest_url = f"{DEFAULT_BASE_URL.rstrip('/')}/rest"
 
 
-def _check_context():
-    if _bearer_token is None or _customer is None or _rest_url is None:
-        raise ValueError("Context must be set using sigrid_api.set_context() before making API calls.")
+def get_period() -> tuple[str, str]:
+    if _period is None:
+        raise Exception("Reporting period not defined")
+    return _period
+
+
+def _check_context() -> None:
+    missing_values = []
+
+    if _bearer_token is None:
+        missing_values.append('_bearer_token')
+    if _customer is None:
+        missing_values.append('_customer')
+    if _rest_url is None:
+        missing_values.append('_rest_url')
+
+    if missing_values:
+        raise ValueError(f"Context must be set using sigrid_api.set_context() before making API calls. "
+                         f"The following values are not set: {', '.join(missing_values)}")
 
 
 @cache
@@ -105,16 +129,20 @@ def _request(url):
 
 
 def _sigrid_api_request(with_system=False):
+    """
+    Decorator to create functions that call Sigrid API requests, optionally with a system parameter.
+    If with_system is set to True, the decorator will first look for the system parameter passed to the function when called.
+    If the system parameter is not provided in the function call, it will use the global system value set by set_context.
+    """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             if with_system:
-                system = kwargs.pop('system', None)
+                system = args[0] if args else kwargs.pop('system', None) or _system
                 if system is None:
-                    if _system is None:
-                        raise ValueError("System not provided and global _system is not set.")
-                    system = _system
-                result = func(system, *args, **kwargs)
+                    raise ValueError("System not provided and global _system is not set.")
+                result = func(system, *args[1:], **kwargs)
             else:
                 result = func(*args, **kwargs)
 
@@ -128,10 +156,30 @@ def _sigrid_api_request(with_system=False):
     return decorator
 
 
-def _make_request(endpoint, **kwargs):
+def _make_request(endpoint):
     _check_context()
     url = f"{_rest_url}/{endpoint}"
-    return _request(url, **kwargs)
+    return _request(url)
+
+
+@_sigrid_api_request()
+def get_portfolio_metadata():
+    endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/system-metadata/{_customer}"
+    return _make_request(endpoint)
+
+
+@_sigrid_api_request()
+def get_portfolio_maintainability():
+    endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/maintainability/{_customer}"
+    return _make_request(endpoint)
+
+
+@_sigrid_api_request()
+def get_objectives_evaluation(period: Period):
+    start = period.start.strftime("%Y-%m-%d")
+    end = period.end.strftime("%Y-%m-%d")
+    endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/objectives-evaluation/{_customer}?startDate={start}&endDate={end}"
+    return _make_request(endpoint)
 
 
 @_sigrid_api_request(with_system=True)
@@ -153,8 +201,8 @@ def get_capabilities(system):
 
 
 @_sigrid_api_request(with_system=True)
-def get_metadata(system):
-    endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/system-metadata/{_customer}"
+def get_system_metadata(system):
+    endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/system-metadata/{_customer}/{system}"
     return _make_request(endpoint)
 
 
@@ -174,4 +222,26 @@ def get_security_findings(system):
 @_sigrid_api_request(with_system=True)
 def get_architecture_findings(system):
     endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/architecture-quality/{_customer}/{system}"
+    return _make_request(endpoint)
+
+
+@_sigrid_api_request(with_system=True)
+def get_architecture_graph(system):
+    endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/architecture-quality/{_customer}/{system}/raw"
+    return _make_request(endpoint)
+
+
+@_sigrid_api_request(with_system=True)
+def get_maintainability_refactoring_candidates(system, system_property: MaintMetric, technology: str = None,
+                                               count: int = None):
+    property_name = system_property.to_json_name()
+
+    query_params = []
+    if technology is not None:
+        query_params.append(f"technology={technology}")
+    if count is not None:
+        query_params.append(f"count={count}")
+    query_string = f"?{'&'.join(query_params)}" if query_params else ""
+
+    endpoint = f"{BASE_ANALYSIS_RESULTS_ENDPOINT}/refactoring-candidates/{_customer}/{system}/{property_name}{query_string}"
     return _make_request(endpoint)
