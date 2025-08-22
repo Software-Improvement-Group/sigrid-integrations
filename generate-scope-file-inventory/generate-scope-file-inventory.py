@@ -18,6 +18,7 @@ from dataclasses import dataclass
 import yaml
 import os
 import sys
+import csv
 from datetime import datetime
 from argparse import ArgumentParser, SUPPRESS
 from sigrid_api_client import SigridApiClient
@@ -39,6 +40,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Creates an overview of scope files for a customer")
     parser.add_argument("--customer", type=str, help="Sigrid customer name.")
     parser.add_argument("--system", type=str, help="Sigrid system name.")
+    parser.add_argument("--out", type=str, default="scope_inventory.csv")
     parser.add_argument("--sigridurl", type=str, default="https://sigrid-says.com", help=SUPPRESS)
     args = parser.parse_args()
 
@@ -56,23 +58,40 @@ if __name__ == "__main__":
         systems = api_client.fetchSystemNames()
     else:
         systems = [args.system]
-    
-    print("system, external_id, division, date, sfir, excludes, osh_enabled, osh_excludes, security_enabled, security_excludes, architecture_enabled")
-    
-    for system in systems:
-        try:
-            date, scope = get_scope_data(api_client, system)
-        except Exception as e:
-            print(f"{system}, Error")
-            continue
-        metadata = api_client.fetchSystemMetadata(system)
-        external_id = metadata.get("externalID", "")
-        division = metadata.get("divisionName", "")
-        scope_file_in_repo = metadata.get("scopeFileInRepository", "")
-        excludes = len(scope.get("exclude", {}))
-        osh_enabled = scope.get("dependencychecker") is not None
-        osh_excludes = len(scope.get("dependencychecker", {}).get("exclude", []))
-        security_enabled = scope.get("thirdpartyfindings", {}).get("enabled") is True
-        security_excludes = len(scope.get("thirdpartyfindings", {}).get("exclude", []))
-        architecture_enabled = scope.get("architecture", {}).get("enabled") is not False
-        print(f"{system}, {external_id}, {division}, {date}, {scope_file_in_repo}, {excludes}, {osh_enabled}, {osh_excludes}, {security_enabled}, {security_excludes}, {architecture_enabled}")
+
+    fieldnames = [
+        "system", "external_id", "division", "date", "age", "sfir",
+        "maint_model", "maint_excludes",
+        "osh_enabled", "osh_model", "osh_excludes",
+        "security_enabled", "security_model", "security_excludes",
+        "architecture_enabled"
+    ]
+
+    with open(args.out, "w", newline="", encoding="utf-8") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for system in systems:
+            try:
+                date, scope = get_scope_data(api_client, system)
+            except Exception as e:
+                writer.writerow({"system": system, "external_id": "Error"})
+                continue
+            metadata = api_client.fetchSystemMetadata(system)
+            row = {
+                "system": system,
+                "external_id": metadata.get("externalID", ""),
+                "division": metadata.get("divisionName", ""),
+                "date": date,
+                "age": (datetime.now() - datetime.strptime(date, "%Y-%m-%d")).days,
+                "sfir": metadata.get("scopeFileInRepository", ""),
+                "maint_model": scope.get("model", ""),
+                "maint_excludes": len(scope.get("exclude", {})),
+                "osh_enabled": scope.get("dependencychecker") is not None,
+                "osh_model": scope.get("dependencychecker", {}).get("model", ""),
+                "osh_excludes": len(scope.get("dependencychecker", {}).get("exclude", [])),
+                "security_enabled": scope.get("thirdpartyfindings", {}).get("enabled") is True,
+                "security_model": scope.get("thirdpartyfindings", {}).get("model", ""),
+                "security_excludes": len(scope.get("thirdpartyfindings", {}).get("exclude", [])),
+                "architecture_enabled": scope.get("architecture", {}).get("enabled") is not False,
+            }
+            writer.writerow(row)
