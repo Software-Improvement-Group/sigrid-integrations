@@ -26,7 +26,16 @@ usage() {
     exit 1
 }
 
-COMMANDS=("report-generator" "objectives_report.py" "get_scope_file.py" "export_portfolio_dependencies.py", "polarion-integration.py", "export_github_issues.py", "export_gitlab_issues.py")
+COMMANDS=(
+    "report-generator"
+    "objectives_report.py"
+    "get_scope_file.py"
+    "export_portfolio_dependencies.py"
+    "polarion-integration.py"
+    "export_github_issues.py"
+    "export_gitlab_issues.py"
+    "generate-scope-file-inventory.py"
+)
 
 if [ $# -lt 2 ] || [ -z $SIGRID_CI_TOKEN ]; then
     usage
