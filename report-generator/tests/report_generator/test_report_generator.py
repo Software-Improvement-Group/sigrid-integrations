@@ -16,8 +16,7 @@ import logging
 import os
 import tempfile
 import time
-from unittest.mock import Mock, MagicMock, patch
-import pytest
+from unittest.mock import Mock, patch
 
 from report_generator.generator.report_generator import ReportGenerator
 
