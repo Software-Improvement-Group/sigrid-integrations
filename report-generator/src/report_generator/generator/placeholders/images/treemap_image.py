@@ -23,8 +23,12 @@ from report_generator.generator.data_models.portfolio import portfolio_arguments
 from report_generator.generator.placeholders.images.base import _AbstractParameterizedImagePlaceholder
 
 import pandas as pd
+import matplotlib
 import matplotlib.pyplot as plt
 import mpl_extra.treemap as tr
+
+matplotlib.use('Agg')  # Use non-interactive backend for thread safety
+plt.ioff()  # Disable interactive mode
 
 class _AbstractTreemapPlaceholder(_AbstractParameterizedImagePlaceholder, ABC):
     @staticmethod
