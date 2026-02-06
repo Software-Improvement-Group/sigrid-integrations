@@ -26,7 +26,16 @@ usage() {
     exit 1
 }
 
-COMMANDS=("report-generator" "objectives_report.py" "get_scope_file.py" "export_portfolio_dependencies.py", "polarion-integration.py", "export_github_issues.py", "export_gitlab_issues.py")
+COMMANDS=(
+    "report-generator"
+    "objectives_report.py"
+    "get_scope_file.py"
+    "export_portfolio_dependencies.py"
+    "polarion-integration.py"
+    "export_github_issues.py"
+    "export_gitlab_issues.py"
+    "generate-scope-file-inventory.py"
+)
 
 if [ $# -lt 2 ] || [ -z $SIGRID_CI_TOKEN ]; then
     usage
@@ -48,6 +57,10 @@ if [ "$MATCH_FOUND" = false ]; then
     echo "Error: Invalid command '$COMMAND'"
     echo
     usage
+fi
+
+if [ -z ${DO_NOT_PULL} ]; then
+    docker pull softwareimprovementgroup/sigrid-integrations
 fi
 
 docker run -it --rm \
