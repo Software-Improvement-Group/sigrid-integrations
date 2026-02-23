@@ -22,12 +22,13 @@ import urllib.request
 from argparse import ArgumentParser
 from base64 import urlsafe_b64encode
 from datetime import datetime
+from typing import Iterator
 
-from issue_data import Issue, IssueTrackerData
+from issue_data_model import IssueTrackerData, WorkItem, WorkItemType
 from issue_utils import parseDate, serialize
 
 
-def fetchIssues(baseURL, projects):
+def fetchIssues(baseURL: str, projects: list[str]) -> Iterator[tuple[str, WorkItem]]:
     for project in projects:
         next = ""
         identity = urlsafe_b64encode(f"{os.environ['JIRA_API_USER']}:{os.environ['JIRA_API_TOKEN']}".encode("utf8"))
@@ -44,9 +45,13 @@ def fetchIssues(baseURL, projects):
                 next = body["nextPageToken"]
 
 
-def parseIssue(baseURL, issue):
-    parsed = Issue(
+def parseIssue(baseURL: str, issue: dict) -> tuple[str, WorkItem]:
+    issueType = issue["fields"]["issuetype"]["name"]
+
+    parsed = WorkItem(
         id=issue["key"],
+        type=mapIssueType(issueType),
+        parentId=issue["parent"]["key"] if issue.get("parent") else None,
         url=f"{baseURL}/browser/{issue['key']}",
         project=issue["fields"]["project"]["name"],
         title=issue["fields"]["summary"],
@@ -55,11 +60,19 @@ def parseIssue(baseURL, issue):
         closed=parseDate(issue["fields"]["resolutiondate"]),
         author=issue["fields"]["creator"]["displayName"],
         assignees=[issue["fields"]["assignee"]["displayName"]] if issue["fields"]["assignee"] else [],
-        epicId=issue["parent"]["key"] if issue.get("parent") else None,
         labels=issue["fields"]["labels"]
     )
 
-    return issue["fields"]["issuetype"]["name"], parsed
+    return issueType, parsed
+
+
+def mapIssueType(issueType: str) -> WorkItemType:
+    if "epic" in issueType.lower():
+        return WorkItemType.EPIC
+    elif "story" in issueType.lower() or "feature" in issueType.lower():
+        return WorkItemType.FEATURE
+    else:
+        return WorkItemType.ISSUE
 
 
 if __name__ == "__main__":
@@ -78,8 +91,8 @@ if __name__ == "__main__":
     items = list(fetchIssues(args.jira_base_url, args.project.split(",")))
     epics = [item for type, item in items if type == args.epic_type]
     issues = [item for type, item in items if type != args.epic_type]
-    data = IssueTrackerData("JIRA", datetime.now(), issues, epics)
+    data = IssueTrackerData("JIRA", datetime.now(), issues + epics, [])
 
     outputFile = os.path.expanduser(args.out)
     serialize(data, outputFile, args.anonymize)
-    print(f"Exported {len(data.issues)} issues and {len(data.epics)} epics to {outputFile}")
+    print(f"Exported {len(data.workItems)} work items to {outputFile}")

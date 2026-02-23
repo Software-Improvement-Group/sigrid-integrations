@@ -1,0 +1,30 @@
+[
+ {
+   "App": "bitcoin",
+   "JiraProject": "MicroStrategy",
+   "GetSIGFindings": "Y",
+   "AllowCreateJiraUS": "Y",
+   "SevDepth": 2
+ },
+ {
+   "App": "ethereum",
+   "JiraProject": "FTX",
+   "GetSIGFindings": "N",
+   "AllowCreateJiraUS": "N",
+   "SevDepth": 1
+ },
+ {
+   "App": "doge",
+   "JiraProject": "FTX",
+   "GetSIGFindings": "Y",
+   "AllowCreateJiraUS": "Y",
+   "SevDepth": 3
+ },
+ {
+   "App": "smoking_chicken_fish",
+   "JiraProject": "FTX",
+   "GetSIGFindings": "Y",
+   "AllowCreateJiraUS": "Y",
+   "SevDepth": 2
+ }
+ ]

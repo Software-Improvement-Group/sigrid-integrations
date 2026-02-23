@@ -1,0 +1,15 @@
+sigRestAPIMain=https://sigrid-says.com/rest/analysis-results/api/v1/maintainability/xxx
+sigRestAPISec=https://sigrid-says.com/rest/analysis-results/api/v1/security-findings/xxx
+sigRestAPIOSH=https://sigrid-says.com/rest/analysis-results/api/v1/osh-findings/xxx
+sigToken=<SIG Token string>
+xxxProxy=http://proxy.xxx.nl
+jiraEnv=P
+jiraAPI=https://jira.xxx.nl/rest/api/2
+jiraToken=<Jira Token string>
+jiraAPI_TEST=https://jira-testing.xxx.nl/rest/api/2
+jiraToken_TEST=<Jira Token string>
+jiraExternalIDField='External Issue ID'
+emailSMTP=smtpsrv.xxx.nl
+emailList=developer@xxx.nl
+emailFrom =noreply@xxx.nl
+doDebug=Y

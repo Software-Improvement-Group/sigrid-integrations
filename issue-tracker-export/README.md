@@ -69,20 +69,12 @@ list of [JIRA project keys](https://confluence.atlassian.com/adminjiraserver/edi
 
 ## What issue tracker data is published to Sigrid?
 
-The issue tracker integration exports issues in a generic format, which is then published to Sigrid. 
-The following information is exported for each issue:
+The issue tracker integration exports issues in a generic format, which is then published to Sigrid.
+The description of your issue will **not** be published to Sigrid. The export only contains metadata for each issue,
+such as its type, its status, and the dates it was created and closed.
 
-  - Project name
-  - Title
-  - Status
-  - Created date
-  - Closed date
-  - Author
-  - Assignee
-  - Epic title
-  - List of labels
-
-The name of the author and assignee are anonymized into an SHA-256 hash. This means the original names are never
+The issue data will contain the names of the authors and assignees. You can anonymize these names, meaning the
+actual name will be replaced with a SHA-256 hash when exporting the data. This means the original names are never
 published to Sigrid.
 
 ## License

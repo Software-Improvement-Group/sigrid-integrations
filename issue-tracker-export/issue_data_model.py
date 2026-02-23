@@ -14,36 +14,47 @@
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
+from typing import Union
+
+
+class WorkItemType(str, Enum):
+    EPIC = "epic"
+    FEATURE = "feature"
+    ISSUE = "issue"
 
 
 @dataclass
-class Issue:
+class WorkItem:
     id: str
+    type: WorkItemType
+    parentId: Union[str, None]
     url: str
-    project: str
+    project: Union[str, None]
     title: str
     descriptionLength: int
     created: datetime
     closed: datetime
-    author: str
+    author: Union[str, None]
     assignees: list[str]
-    epicId: str
     labels: list[str]
 
-    
+
 @dataclass
-class Epic:
+class PullRequest:
     id: str
     url: str
+    project: str
     title: str
     created: datetime
     closed: datetime
-    labels: list[str]
+    assignees: list[str]
+    reviewers: list[str]
 
     
 @dataclass
 class IssueTrackerData:
     platform: str
     exported: datetime
-    issues: list[Issue]
-    epics: list[Epic]
+    workItems: list[WorkItem]
+    pullRequests: list[PullRequest]

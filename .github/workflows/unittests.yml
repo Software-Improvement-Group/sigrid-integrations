@@ -12,14 +12,25 @@ jobs:
     steps:
       - name: "Check out repository"
         uses: actions/checkout@v4
+        
+      - name: "Install native dependencies"
+        run: |
+          sudo apt update
+          sudo apt install -y ldap-utils slapd enchant-2 libldap2-dev libsasl2-dev apparmor-utils
 
-      - name: "Install dependencies"
+      - name: "Install Python dependencies"
         run: |
           pip3 install -e "./report-generator/[test]"
-
-      - name: "Run tests"
+          pip3 install -r ldap-group-sync/requirements.txt
+      
+      - name: "Report Generator tests"
         run: |
-          pytest --junitxml=results.xml
+          pytest --ignore=ldap-group-sync/ --junitxml=results.xml
+          
+      - name: "LDAP Group Sync tests"
+        run: |
+          cd ldap-group-sync
+          python3 -m pytest
 
       - name: "Upload test results"
         uses: actions/upload-artifact@v4

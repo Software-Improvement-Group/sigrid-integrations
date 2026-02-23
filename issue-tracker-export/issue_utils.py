@@ -12,44 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import dateutil.parser
 import hashlib
 import os
 from dataclasses import asdict
 from datetime import datetime
 from json import dump
+from typing import Union
 
-import dateutil.parser
+from issue_data_model import IssueTrackerData
 
 
-def parseDate(value):
+def parseDate(value: Union[str, None]) -> Union[datetime, None]:
     if value in (None, "", "None"):
         return None
     return dateutil.parser.isoparse(value)
 
 
-def serialize(data, outputFile, anonymize):
+def serialize(data: IssueTrackerData, outputFile: str, anonymize: bool) -> None:
     os.makedirs(os.path.dirname(outputFile), exist_ok=True)
 
     if anonymize:
-        for issue in data.issues:
-            issue.author = anonymizeAuthorName(issue.author) if issue.author else None
-            issue.assignees = [anonymizeAuthorName(assignee) for assignee in issue.assignees]
+        for workItem in data.workItems:
+            workItem.author = anonymizeAuthorName(workItem.author) if workItem.author else None
+            workItem.assignees = [anonymizeAuthorName(assignee) for assignee in workItem.assignees]
+        for pr in data.pullRequests:
+            pr.assignees = [anonymizeAuthorName(assignee) for assignee in pr.assignees]
+            pr.reviewers = [anonymizeAuthorName(reviewer) for reviewer in pr.reviewers]
 
     with open(outputFile, "w", encoding="utf8") as f:
         dump(asdict(data), f, indent=4, ensure_ascii=False, default=serializeFieldToJSON)
 
 
-def serializeFieldToJSON(field):
+def serializeFieldToJSON(field: str) -> str:
     if isinstance(field, datetime):
         return field.isoformat()
     raise TypeError(f"Cannot serialize field to JSON: {type(field)}")
 
 
-def anonymizeAuthorName(name):
+def anonymizeAuthorName(name: str) -> str:
     return hashlib.sha256(name.encode("utf8")).hexdigest()
 
 
-def filterIssueData(issueData, excludeLabels):
+def filterIssueData(issueData: IssueTrackerData, excludeLabels: list[str]) -> None:
     isExcluded = lambda labels: bool(set(labels) & set(excludeLabels))
-    issueData.issues = [issue for issue in issueData.issues if not isExcluded(issue.labels)]
-    issueData.epics = [epic for epic in issueData.epics if not isExcluded(epic.labels)]
+    issueData.workItems = [workItem for workItem in issueData.workItems if not isExcluded(workItem.labels)]
