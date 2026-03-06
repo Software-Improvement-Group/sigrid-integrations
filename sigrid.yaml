@@ -7,3 +7,27 @@ dependencychecker:
 
 thirdpartyfindings:
   enabled: true
+
+architecture:
+  undesirable_dependencies:
+    - source: "report_generator/generator"
+      target: "report_generator/presets"
+      bidirectional: true
+    - source: "report_generator/generator/context"
+      target: "report_generator/generator/domain"
+    - source: "report_generator/generator/context"
+      target: "report_generator/generator/placeholders"
+    - source: "report_generator/generator/domain"
+      target: "report_generator/generator/placeholders"
+    - source: "report_generator/generator/domain/portfolio"
+      target: "report_generator/generator/domain/system"
+      bidirectional: true
+    - source: "report_generator/generator/utils"
+      target: "report_generator/generator/.*/.*"
+    - source: "report_generator/generator/placeholders/formatting"
+      target: "report_generator/generator/placeholders/rendering"
+      bidirectional: true
+    - source: "report_generator/generator/placeholders/formatting"
+      target: "report_generator/generator/placeholders/implementations"
+    - source: "report_generator/generator/placeholders/rendering"
+      target: "report_generator/generator/placeholders/implementations"
