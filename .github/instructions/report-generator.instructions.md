@@ -35,6 +35,27 @@ This repository uses a layered architecture (`context → domain → placeholder
 
 Do not flag import order, unused imports, or dependency direction — those are enforced by a separate CI job.
 
+## Fail early
+
+Flag any code that silently swallows a missing or unexpected state by returning a neutral default (`None`, `0`, `[]`,
+`""`) instead of raising an error. Returning a default when data is genuinely absent is fine, but doing so when it
+indicates a bug or a broken assumption hides the real problem and pushes failures downstream where they are much harder
+to diagnose.
+
+Concrete things to look for during review:
+
+- A lookup that returns `0` or `None` when an entity is not found, where "not found" should never happen in normal
+  execution (e.g. a system name that came from the same API response is then looked up in a second call and silently
+  defaults to zero).
+- A calculation that silently excludes items from aggregations (weighted averages, sums, distributions) because a
+  helper returned a falsy default instead of surfacing the error.
+- `except Exception: pass` or `except Exception: return default` blocks that discard error information.
+- Conditionals that skip processing when a value is `None`/`0` without logging or raising, making it impossible to
+  tell from the output whether data was missing or simply zero.
+
+When in doubt: fail loudly at the point where the invariant is violated, not quietly at the point where the result is
+consumed.
+
 ## Version updating
 
 Every change requires a version bump in `report-generator/setup.cfg` using semantic versioning. Flag the PR if the
