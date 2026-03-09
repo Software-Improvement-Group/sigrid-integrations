@@ -2,8 +2,12 @@ name: lint
 
 on:
   pull_request:
+    paths:
+      - "report-generator/**"
   push:
     branches: [main]
+    paths:
+      - "report-generator/**"
 
 jobs:
   lint:
