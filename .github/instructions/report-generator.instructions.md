@@ -38,6 +38,26 @@ violations:
 Do not flag import order, unused imports, or dependency direction — a separate CI job enforces those, so review comments
 on them just create noise.
 
+## Python design quality
+
+Review all changes as an experienced Python developer would. Apply standard design principles — single responsibility,
+clear naming, appropriate use of language features — and flag issues that make the code harder to understand, extend, or
+maintain, even if it "works."
+
+A few examples to calibrate the level of issue worth flagging (not exhaustive):
+
+- Using an abstract base class where a mixin or `typing.Protocol` would be more appropriate — ABCs imply "you must
+  subclass this," which is a strong commitment when the intent is just shared behavior or a structural contract.
+- God methods that combine parsing, transformation, and side effects in one body.
+- Vague or misleading names (e.g. `process_data`, `handle`, `result`) that force the reader to study the implementation
+  to understand intent.
+- Reinventing something the standard library or well-established packages already handle well.
+- Mutable default arguments, broad `isinstance` checks where polymorphism would be cleaner, or unfrozen data classes
+  that should be frozen.
+
+Use your judgment on severity: focus on issues that would trip up the next person who touches this code, not on minor
+style preferences.
+
 ## Fail early
 
 Silent defaults (`None`, `0`, `[]`, `""`) are fine when the data is genuinely absent — but when they mask a broken
@@ -59,7 +79,7 @@ An example of code that is **fine**: an API endpoint documents that a metric may
 code returns `None` to represent that — the caller then decides how to display the gap. The distinction is whether the
 absence is expected by design or a symptom of something going wrong.
 
-## Version updating
+## Version bump
 
 Every change requires a version bump in `report-generator/setup.cfg` using semantic versioning. Flag the PR if the
 version is unchanged.
