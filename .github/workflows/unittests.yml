@@ -31,7 +31,7 @@ jobs:
 
       - name: "Install Python dependencies"
         run: |
-          pip install -e "./report-generator/[test]"
+          pip install -e "./report-generator[test]"
           pip install -r ldap-group-sync/requirements.txt
 
       - name: "Report Generator tests"
