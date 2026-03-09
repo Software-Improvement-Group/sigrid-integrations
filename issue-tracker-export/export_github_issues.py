@@ -37,12 +37,17 @@ def fetchAll(apiBaseURL: str, org: str, repo: str, path: str) -> Iterator:
         with urllib.request.urlopen(request) as response:
             for element in json.loads(response.read().decode("utf8")):
                 yield element
-            link = re.compile("<(\\S+?)>; rel=\"next\"").search(response.headers.get("link", ""))
+            link = re.compile('<(\\S+?)>; rel="next"').search(
+                response.headers.get("link", "")
+            )
             url = link.group(1) if link else None
 
 
 def fetchIssues(apiBaseURL: str, org: str, repo: str) -> list[WorkItem]:
-    return [parseIssue(org, repo, issue) for issue in fetchAll(apiBaseURL, org, repo, "/issues?state=all")]
+    return [
+        parseIssue(org, repo, issue)
+        for issue in fetchAll(apiBaseURL, org, repo, "/issues?state=all")
+    ]
 
 
 def parseIssue(org: str, repo: str, issue: dict) -> WorkItem:
@@ -58,12 +63,15 @@ def parseIssue(org: str, repo: str, issue: dict) -> WorkItem:
         closed=parseDate(issue["closed_at"]),
         author=issue["user"]["login"],
         assignees=[assignee["login"] for assignee in issue["assignees"]],
-        labels=[label["name"] for label in issue["labels"]]
+        labels=[label["name"] for label in issue["labels"]],
     )
 
 
 def fetchMilestones(apiBaseURL: str, org: str, repo: str) -> list[WorkItem]:
-    return [parseMilestone(milestone) for milestone in fetchAll(apiBaseURL, org, repo, "/milestones?state=all")]
+    return [
+        parseMilestone(milestone)
+        for milestone in fetchAll(apiBaseURL, org, repo, "/milestones?state=all")
+    ]
 
 
 def parseMilestone(milestone: dict) -> WorkItem:
@@ -79,12 +87,15 @@ def parseMilestone(milestone: dict) -> WorkItem:
         closed=parseDate(milestone["closed_at"]),
         author=None,
         assignees=[],
-        labels=[]
+        labels=[],
     )
 
 
 def fetchPullRequests(apiBaseURL: str, org: str, repo: str) -> list[PullRequest]:
-    return [parsePullRequest(org, repo, pr) for pr in fetchAll(apiBaseURL, org, repo, "/pulls?state=all")]
+    return [
+        parsePullRequest(org, repo, pr)
+        for pr in fetchAll(apiBaseURL, org, repo, "/pulls?state=all")
+    ]
 
 
 def parsePullRequest(org: str, repo: str, pr: dict) -> PullRequest:
@@ -105,12 +116,25 @@ def combine(repoData: list[list]) -> list:
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Exports GitHub issues into a format that can be analyzed by Sigrid.")
+    parser = ArgumentParser(
+        description="Exports GitHub issues into a format that can be analyzed by Sigrid."
+    )
     parser.add_argument("--github-api-url", type=str, default="https://api.github.com")
-    parser.add_argument("--org", type=str, required=True, help="GitHub organization name.")
-    parser.add_argument("--repo", type=str, required=True, help="Comma-separated list of GitHub repository names.")
-    parser.add_argument("--out", type=str, default=".sigrid/github-issues.json", help="Output file.")
-    parser.add_argument("--anonymize", action="store_true", help="Anonymize author names.")
+    parser.add_argument(
+        "--org", type=str, required=True, help="GitHub organization name."
+    )
+    parser.add_argument(
+        "--repo",
+        type=str,
+        required=True,
+        help="Comma-separated list of GitHub repository names.",
+    )
+    parser.add_argument(
+        "--out", type=str, default=".sigrid/github-issues.json", help="Output file."
+    )
+    parser.add_argument(
+        "--anonymize", action="store_true", help="Anonymize author names."
+    )
     args = parser.parse_args()
 
     if "GITHUB_API_TOKEN" not in os.environ:
@@ -118,11 +142,22 @@ if __name__ == "__main__":
         sys.exit(1)
 
     repos = args.repo.split(",")
-    repoIssues = [list(fetchIssues(args.github_api_url, args.org, repo)) for repo in repos]
-    repoMilestones = [list(fetchMilestones(args.github_api_url, args.org, repo)) for repo in repos]
-    repoPRs = [list(fetchPullRequests(args.github_api_url, args.org, repo)) for repo in repos]
+    repoIssues = [
+        list(fetchIssues(args.github_api_url, args.org, repo)) for repo in repos
+    ]
+    repoMilestones = [
+        list(fetchMilestones(args.github_api_url, args.org, repo)) for repo in repos
+    ]
+    repoPRs = [
+        list(fetchPullRequests(args.github_api_url, args.org, repo)) for repo in repos
+    ]
 
-    data = IssueTrackerData("GitHub", datetime.now(), combine(repoIssues) + combine(repoMilestones), combine(repoPRs))
+    data = IssueTrackerData(
+        "GitHub",
+        datetime.now(),
+        combine(repoIssues) + combine(repoMilestones),
+        combine(repoPRs),
+    )
     outputFile = os.path.expanduser(args.out)
     serialize(data, outputFile, args.anonymize)
     print(f"Exported {len(data.workItems)} work items to {outputFile}")

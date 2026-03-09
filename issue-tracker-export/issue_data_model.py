@@ -51,7 +51,7 @@ class PullRequest:
     assignees: list[str]
     reviewers: list[str]
 
-    
+
 @dataclass
 class IssueTrackerData:
     platform: str

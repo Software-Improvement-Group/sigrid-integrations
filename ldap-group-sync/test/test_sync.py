@@ -30,7 +30,7 @@ OPEN_SOURCE_LDAP_CONFIG = LdapConfig(
     groupDN="dc=example,dc=com",
     groupQuery="objectclass=groupOfUniqueNames",
     groupNameAttr="cn",
-    groupMemberAttr="uniqueMember"
+    groupMemberAttr="uniqueMember",
 )
 
 
@@ -48,7 +48,7 @@ def testCreateMissingGroups():
         "create group Mathematicians",
         "create group Scientists",
         "create group Italians",
-        "create group Chemists"
+        "create group Chemists",
     ]
 
 
@@ -60,10 +60,7 @@ def testDoNotCreateGroupsAlreadyThere():
 
     syncUserGroups(sigrid, ldapConnection)
 
-    assert sigrid.actions == [
-        "list groups",
-        "create group Italians"
-    ]
+    assert sigrid.actions == ["list groups", "create group Italians"]
 
 
 def testDeleteObsoleteGroups():
@@ -78,7 +75,7 @@ def testDeleteObsoleteGroups():
         "list groups",
         "create group Italians",
         "create group Chemists",
-        "delete group Belgians"
+        "delete group Belgians",
     ]
 
 
@@ -91,10 +88,7 @@ def testUpdateGroupMemberships():
 
     syncGroupMemberships(sigrid, ldapConnection)
 
-    assert sigrid.actions == [
-        "list groups",
-        "update group 1 to ['3']"
-    ]
+    assert sigrid.actions == ["list groups", "update group 1 to ['3']"]
 
 
 def testAutoCreateMissingSigridUsers():
@@ -108,7 +102,7 @@ def testAutoCreateMissingSigridUsers():
     assert sigrid.actions == [
         "list groups",
         "create user tesla@ldap.forumsys.com",
-        "update group 1 to ['3']"
+        "update group 1 to ['3']",
     ]
 
 
@@ -128,18 +122,22 @@ class MockSigridUserManagement(SigridUserManagement):
         groupObject = {
             "id": str(len(self.existingGroups) + 1),
             "name": name,
-            "users": []
+            "users": [],
         }
         self.existingGroups.append(groupObject)
         return groupObject
 
     def deleteUserGroup(self, groupId: str):
         self.actions.append(f"delete group {groupId}")
-        self.existingGroups = [group for group in self.existingGroups if group["id"] != groupId]
+        self.existingGroups = [
+            group for group in self.existingGroups if group["id"] != groupId
+        ]
 
     def updateGroupMembers(self, groupId: str, userIds: list[str]):
         self.actions.append(f"update group {groupId} to {userIds}")
-        groupObject = next(group for group in self.existingGroups if group["id"] == groupId)
+        groupObject = next(
+            group for group in self.existingGroups if group["id"] == groupId
+        )
         groupObject["users"] = userIds
 
     def listUsers(self):
@@ -151,7 +149,7 @@ class MockSigridUserManagement(SigridUserManagement):
             "id": str(len(self.existingUsers) + 1),
             "email": email,
             "firstName": firstName,
-            "lastName": lastName
+            "lastName": lastName,
         }
         self.existingUsers.append(userObject)
         return userObject

@@ -18,7 +18,9 @@ from .sigrid_user_management import SigridUserManagement
 from .ldap_connection import LdapConnection, LdapGroup, LdapUser
 
 
-def syncUserGroups(sigrid: SigridUserManagement, ldapConnection: LdapConnection) -> None:
+def syncUserGroups(
+    sigrid: SigridUserManagement, ldapConnection: LdapConnection
+) -> None:
     ldapGroups = ldapConnection.listGroups()
     sigridGroups = {group["name"]: group for group in sigrid.listUserGroups()}
 
@@ -31,9 +33,13 @@ def syncUserGroups(sigrid: SigridUserManagement, ldapConnection: LdapConnection)
         sigrid.deleteUserGroup(group)
 
 
-def syncGroupMemberships(sigrid: SigridUserManagement, ldapConnection: LdapConnection) -> None:
+def syncGroupMemberships(
+    sigrid: SigridUserManagement, ldapConnection: LdapConnection
+) -> None:
     sigridGroups = {group["name"]: group for group in sigrid.listUserGroups()}
-    connectedLdapGroups = [group for group in ldapConnection.listGroups() if group.name in sigridGroups]
+    connectedLdapGroups = [
+        group for group in ldapConnection.listGroups() if group.name in sigridGroups
+    ]
 
     ldapUsers = ldapConnection.listUsers()
     sigridUsers = {user["email"]: user for user in sigrid.listUsers()}
@@ -46,13 +52,19 @@ def syncGroupMemberships(sigrid: SigridUserManagement, ldapConnection: LdapConne
         for ldapUser in ldapGroupUsers:
             if ldapUser.email not in sigridUsers:
                 print(f"Creating missing Sigrid SSO user '{ldapUser.email}'")
-                sigridUsers[ldapUser.email] = sigrid.createUser(ldapUser.email, ldapUser.firstName, ldapUser.lastName)
+                sigridUsers[ldapUser.email] = sigrid.createUser(
+                    ldapUser.email, ldapUser.firstName, ldapUser.lastName
+                )
             sigridGroupUserIds.append(sigridUsers[ldapUser.email]["id"])
 
-        sigrid.updateGroupMembers(sigridGroups[ldapGroup.name]["id"], sigridGroupUserIds)
+        sigrid.updateGroupMembers(
+            sigridGroups[ldapGroup.name]["id"], sigridGroupUserIds
+        )
 
 
-def findMissingGroups(ldapGroups: list[LdapGroup], sigridGroups: dict) -> list[LdapGroup]:
+def findMissingGroups(
+    ldapGroups: list[LdapGroup], sigridGroups: dict
+) -> list[LdapGroup]:
     return [group for group in ldapGroups if group.name not in sigridGroups]
 
 
@@ -68,4 +80,6 @@ def findLdapUsers(group: LdapGroup, users: list[LdapUser]) -> Iterator[LdapUser]
         if uid in uids:
             yield uids[uid]
         else:
-            print(f"Warning: user '{uid}' is a member of group '{group.name}', but found no matching LDAP user")
+            print(
+                f"Warning: user '{uid}' is a member of group '{group.name}', but found no matching LDAP user"
+            )
