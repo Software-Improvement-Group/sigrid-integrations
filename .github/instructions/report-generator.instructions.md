@@ -10,7 +10,9 @@ layouts and custom user-provided templates, using a placeholder system to map Si
 
 ## Architecture enforcement
 
-This repository uses a layered architecture (`context → domain → placeholders → rendering`); see `report-generator/docs/architecture.md` for the full explanation. During code review, flag the following logical placement violations:
+This repository uses a layered architecture (`context → domain → placeholders → rendering`); see
+`report-generator/docs/architecture.md` for the full explanation. During code review, flag the following layer boundary
+violations:
 
 1. **`context/` interpreting data:** Does new code in `context/` parse, reshape, or apply any semantic meaning to API
    responses? → `context/` returns raw JSON only; interpretation belongs in `domain/`.
@@ -33,28 +35,29 @@ This repository uses a layered architecture (`context → domain → placeholder
 6. **`presets/` using internals:** Does a new or changed preset import from anywhere inside `generator/` other than the
    public `ReportGenerator` API? → Presets are thin wrappers and must not depend on generator internals.
 
-Do not flag import order, unused imports, or dependency direction — those are enforced by a separate CI job.
+Do not flag import order, unused imports, or dependency direction — a separate CI job enforces those, so review comments
+on them just create noise.
 
 ## Fail early
 
-Flag any code that silently swallows a missing or unexpected state by returning a neutral default (`None`, `0`, `[]`,
-`""`) instead of raising an error. Returning a default when data is genuinely absent is fine, but doing so when it
-indicates a bug or a broken assumption hides the real problem and pushes failures downstream where they are much harder
-to diagnose.
+Silent defaults (`None`, `0`, `[]`, `""`) are fine when the data is genuinely absent — but when they mask a broken
+assumption, they push the failure downstream where it is much harder to diagnose. Flag code that returns a neutral
+default where "not found" actually indicates a bug.
 
-Concrete things to look for during review:
+Concrete things to look for:
 
 - A lookup that returns `0` or `None` when an entity is not found, where "not found" should never happen in normal
-  execution (e.g. a system name that came from the same API response is then looked up in a second call and silently
-  defaults to zero).
+  execution. For example: a system name that came from the same API response is then looked up in a second call and
+  silently defaults to zero — that is a bug in the caller, not missing data.
 - A calculation that silently excludes items from aggregations (weighted averages, sums, distributions) because a
   helper returned a falsy default instead of surfacing the error.
 - `except Exception: pass` or `except Exception: return default` blocks that discard error information.
 - Conditionals that skip processing when a value is `None`/`0` without logging or raising, making it impossible to
   tell from the output whether data was missing or simply zero.
 
-When in doubt: fail loudly at the point where the invariant is violated, not quietly at the point where the result is
-consumed.
+An example of code that is **fine**: an API endpoint documents that a metric may not exist for a given system, and the
+code returns `None` to represent that — the caller then decides how to display the gap. The distinction is whether the
+absence is expected by design or a symptom of something going wrong.
 
 ## Version updating
 
