@@ -55,5 +55,6 @@ def anonymizeAuthorName(name: str) -> str:
 
 
 def filterIssueData(issueData: IssueTrackerData, excludeLabels: list[str]) -> None:
-    isExcluded = lambda labels: bool(set(labels) & set(excludeLabels))
+    def isExcluded(labels):
+        return bool(set(labels) & set(excludeLabels))
     issueData.workItems = [workItem for workItem in issueData.workItems if not isExcluded(workItem.labels)]

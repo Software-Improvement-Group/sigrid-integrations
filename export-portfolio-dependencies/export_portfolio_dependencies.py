@@ -40,10 +40,10 @@ def fetch_api_data(customer: str, token: str):
             return response.read().decode("utf-8")
     except urllib.error.HTTPError as e:
         if e.code == 403:
-            logger.error(f"Access forbidden. Please check your API token and permissions.")
+            logger.error("Access forbidden. Please check your API token and permissions.")
             raise RuntimeError("Access forbidden. Please check your API token and permissions.") from e
         elif e.code == 404:
-            logger.error(f"Resource not found. Please check the customer name provided.")
+            logger.error("Resource not found. Please check the customer name provided.")
             raise RuntimeError("Resource not found. Please check the customer name provided.") from e
         else:
             logger.error(f"HTTP error occurred: {e.code} {e.reason}")
@@ -142,10 +142,10 @@ def create_single_excel_sheet(writer: pd.ExcelWriter, components: List[Dict]):
     if components:
         df = pd.DataFrame(components)
         df.to_excel(writer, sheet_name='All Components', index=False)
-        logger.debug(f"Created single sheet with all components")
+        logger.debug("Created single sheet with all components")
         return True
     else:
-        logger.warning(f"No dependencies found across all systems")
+        logger.warning("No dependencies found across all systems")
         return False
     
 def retrieve_mendix_versions(json_data: Any):
@@ -239,7 +239,7 @@ def main():
     try:
         logger.info(f"Fetching data for customer: {customer_name}")
         json_data = fetch_api_data(customer_name, token)
-        logger.info(f"Data fetched successfully. Processing output...")
+        logger.info("Data fetched successfully. Processing output...")
         process_api_output(json_data, output_file, args.pivot, args.mendix_versions_only)
         logger.info(f"Data successfully exported to {output_file}")
     except Exception as e:

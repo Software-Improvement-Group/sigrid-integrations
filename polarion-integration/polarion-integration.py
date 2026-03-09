@@ -21,7 +21,7 @@ import sys
 from dataclasses import dataclass
 from http.client import RemoteDisconnected
 from json import JSONDecodeError
-from typing import Callable, Any, Union
+from typing import Callable, Any
 import urllib.parse
 import urllib.request
 import urllib.error
@@ -113,7 +113,7 @@ class PolarionApiClient:
         self.systemWorkItemId = systemWorkItemId
 
     def call(self, method, path, body=None):
-        data = None if body == None else json.dumps(body).encode("utf8")
+        data = None if body is None else json.dumps(body).encode("utf8")
     
         try:
             request = urllib.request.Request(f"{self.baseURL}{path}", data=data, method=method)
@@ -179,7 +179,7 @@ class PolarionApiClient:
                             "priority": "50", 
                             "description": {
                                 "type": "text/html",
-                                "value": f""
+                                "value": ""
                             },
                             "componentName": componentName,
                             "componentVersion": componentVersion,

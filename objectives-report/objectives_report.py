@@ -21,7 +21,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
-from pygal import HorizontalStackedBar, Line, Radar, StackedBar
+from pygal import HorizontalStackedBar, Line, StackedBar
 from pygal.style import Style
 
 from objectives import Group, ObjectivesCalculator, Status, SystemFilter, OBJECTIVE_TYPES
@@ -48,7 +48,7 @@ def generateGroupedObjectivesStatusChart(calculator, outputFile):
     statusPercentages = {type: calculator.calculateStatus(systems, type) for type in types}
 
     chart = HorizontalStackedBar(width=600, height=400, range=(0, 100), style=getChartStyle(STATUS_COLORS), legend_at_bottom=True)
-    chart.title = f"Sigrid objectives status"
+    chart.title = "Sigrid objectives status"
     chart.x_labels = [OBJECTIVE_TYPES[type] for type in types]
     chart.value_formatter = lambda value: f"{round(value)}%"
     chart.add("Complete", [statusPercentages[type][Status.COMPLETE] for type in types])
@@ -117,7 +117,8 @@ def generateOverallObjectivesLineChart(calculator, systemFilter, outputFile):
     
 def generateMetadataCompletionChart(calculator, group, outputFile):
     groups = calculator.groupSystems(calculator.status, group)
-    countMetadataComplete = lambda systems: sum(1 for system in systems if calculator.isMetadataComplete(system))
+    def countMetadataComplete(systems):
+        return sum(1 for system in systems if calculator.isMetadataComplete(system))
     withMetadata = [countMetadataComplete(systems) for group, systems in groups.items()]
     withoutMetadata = [len(systems) - countMetadataComplete(systems) for group, systems in groups.items()]
 
@@ -138,7 +139,8 @@ def generateObjectivesBreakdownChart(calculator, type, groupedSystems, outputFil
     chart.value_formatter = lambda value: f"{round(value)}%"
     for name in sorted(groupedSystems.keys()):
         systemNames = [system["systemName"] for system in groupedSystems[name]]
-        systemFilter = lambda system: system["systemName"] in systemNames
+        def systemFilter(system):
+            return system["systemName"] in systemNames
         status = [calculator.calculateStatus(calculator.trend[period], type, filter=systemFilter)[Status.COMPLETE] for period in periods]
         chart.add(name, status)
     chart.render_to_file(outputFile)
@@ -161,8 +163,10 @@ def formatTitle(objective):
     if objective["conditions"].get("unconditional", False):
         return title
         
-    formatField = lambda field: CONDITION_DISPLAY_NAMES.get(field, field)
-    formatValues = lambda values: ", ".join(values).lower().replace("_", " ")
+    def formatField(field):
+        return CONDITION_DISPLAY_NAMES.get(field, field)
+    def formatValues(values):
+        return ", ".join(values).lower().replace("_", " ")
     conditions = [f"{formatField(field)}: {formatValues(values)}" for field, values in objective["conditions"].items()]
     return f"{title} ({', '.join(conditions)})"
     

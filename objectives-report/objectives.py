@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import itertools
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from sigrid_api_client import SigridApiClient
 
 
 OBJECTIVE_TYPES = {
@@ -65,8 +63,8 @@ class SystemFilter:
     def check(self, systemEvaluation, metadata):
         systemMetadata = metadata[systemEvaluation["systemName"]]
         active = systemMetadata["active"] and not systemMetadata["isDevelopmentOnly"]
-        divisionMatch = self.division == None or self.division == (systemMetadata["divisionName"] or "Unknown")
-        teamMatch = self.team == None or self.team in (systemMetadata["teamNames"] or "Unknown")
+        divisionMatch = self.division is None or self.division == (systemMetadata["divisionName"] or "Unknown")
+        teamMatch = self.team is None or self.team in (systemMetadata["teamNames"] or "Unknown")
         return active and divisionMatch and teamMatch
         
     def apply(self, systemEvaluations, metadata):
@@ -126,7 +124,7 @@ class ObjectivesCalculator:
         statusCount = {status: 0 for status in Status}
         
         for system in systemEvaluations:
-            if filter == None or filter(system):
+            if filter is None or filter(system):
                 for systemObjectiveEvaluation in system["objectives"]:
                     if type in (systemObjectiveEvaluation["type"], None, "*"):
                         status = self.determineStatus(systemObjectiveEvaluation)
@@ -139,7 +137,7 @@ class ObjectivesCalculator:
         return {status: (count * 100.0 / total if total > 0 else 0) for status, count in statusCount.items()}
         
     def determineStatus(self, systemObjectiveEvaluation):
-        if systemObjectiveEvaluation == None:
+        if systemObjectiveEvaluation is None:
             return Status.NA
         elif systemObjectiveEvaluation["targetMetAtEnd"] == "MET":
             return Status.COMPLETE

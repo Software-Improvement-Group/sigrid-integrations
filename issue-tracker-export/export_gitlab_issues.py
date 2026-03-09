@@ -137,7 +137,7 @@ if __name__ == "__main__":
     parser.add_argument("--anonymize", action="store_true", help="Anonymize author names.")
     args = parser.parse_args()
 
-    if not "GITLAB_API_TOKEN" in os.environ:
+    if "GITLAB_API_TOKEN" not in os.environ:
         print("Missing environment variable GITLAB_API_TOKEN")
         sys.exit(1)
 
