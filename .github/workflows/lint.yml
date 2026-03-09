@@ -24,3 +24,22 @@ jobs:
         with:
           args: "format --check --diff"
           src: "./report-generator"
+
+  architecture-lint:
+    name: "Architecture lint"
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check out repository"
+        uses: actions/checkout@v4
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: "Install dependencies"
+        run: pip install -e "./report-generator[test]"
+
+      - name: "Check architecture contracts"
+        working-directory: report-generator
+        run: lint-imports
