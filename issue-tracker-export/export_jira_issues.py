@@ -31,11 +31,7 @@ from issue_utils import parseDate, serialize
 def fetchIssues(baseURL: str, projects: list[str]) -> Iterator[tuple[str, WorkItem]]:
     for project in projects:
         next = ""
-        identity = urlsafe_b64encode(
-            f"{os.environ['JIRA_API_USER']}:{os.environ['JIRA_API_TOKEN']}".encode(
-                "utf8"
-            )
-        )
+        identity = urlsafe_b64encode(f"{os.environ['JIRA_API_USER']}:{os.environ['JIRA_API_TOKEN']}".encode("utf8"))
 
         while True:
             url = f"{baseURL}/rest/api/3/search/jql?jql=project%3D{project}&fields=*all&nextPageToken={next}"
@@ -63,10 +59,8 @@ def parseIssue(baseURL: str, issue: dict) -> tuple[str, WorkItem]:
         created=parseDate(issue["fields"]["created"]),
         closed=parseDate(issue["fields"]["resolutiondate"]),
         author=issue["fields"]["creator"]["displayName"],
-        assignees=[issue["fields"]["assignee"]["displayName"]]
-        if issue["fields"]["assignee"]
-        else [],
-        labels=issue["fields"]["labels"],
+        assignees=[issue["fields"]["assignee"]["displayName"]] if issue["fields"]["assignee"] else [],
+        labels=issue["fields"]["labels"]
     )
 
     return issueType, parsed
@@ -82,30 +76,12 @@ def mapIssueType(issueType: str) -> WorkItemType:
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(
-        description="Exports JIRA issues into a format that can be analyzed by Sigrid."
-    )
-    parser.add_argument(
-        "--jira-base-url", type=str, required=True, help="JIRA base URL."
-    )
-    parser.add_argument(
-        "--project",
-        type=str,
-        required=True,
-        help="Comma-separated list of JIRA project keys.",
-    )
-    parser.add_argument(
-        "--out", type=str, default=".sigrid/jira-issues.json", help="Output file."
-    )
-    parser.add_argument(
-        "--anonymize", action="store_true", help="Anonymize author names."
-    )
-    parser.add_argument(
-        "--epic-type",
-        type=str,
-        default="Epic",
-        help="The issue type you use for epics.",
-    )
+    parser = ArgumentParser(description="Exports JIRA issues into a format that can be analyzed by Sigrid.")
+    parser.add_argument("--jira-base-url", type=str, required=True, help="JIRA base URL.")
+    parser.add_argument("--project", type=str, required=True, help="Comma-separated list of JIRA project keys.")
+    parser.add_argument("--out", type=str, default=".sigrid/jira-issues.json", help="Output file.")
+    parser.add_argument("--anonymize", action="store_true", help="Anonymize author names.")
+    parser.add_argument("--epic-type", type=str, default="Epic", help="The issue type you use for epics.")
     args = parser.parse_args()
 
     if "JIRA_API_USER" not in os.environ or "JIRA_API_TOKEN" not in os.environ:

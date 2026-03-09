@@ -21,17 +21,13 @@ class ArchitectureGraph:
 
     def __init__(self, graph):
         self.graph = graph
-        self.systemLevel = next(
-            se for se in self.graph["systemElements"] if se["type"] == "SYSTEM"
-        )
+        self.systemLevel = next(se for se in self.graph["systemElements"] if se["type"] == "SYSTEM")
         self.systemElements = {se["id"]: se for se in self.graph["systemElements"]}
 
         self.children = defaultdict(list)
         for dependency in graph["dependencies"]:
             if dependency["type"] in self.HIERARCHY_DEPENDENCIES:
-                self.children[dependency["sourceElementId"]].append(
-                    dependency["targetElementId"]
-                )
+                self.children[dependency["sourceElementId"]].append(dependency["targetElementId"])
 
     def crawlHierarchy(self, subjectId):
         hierarchy = {subjectId}
@@ -40,10 +36,7 @@ class ArchitectureGraph:
         return hierarchy
 
     def getTopLevelComponents(self):
-        topLevel = [
-            self.systemElements[childId]
-            for childId in self.children[self.systemLevel["id"]]
-        ]
+        topLevel = [self.systemElements[childId] for childId in self.children[self.systemLevel["id"]]]
         return [se for se in topLevel if se["type"] == "CODE_COMPONENT"]
 
     def findDependencies(self, source, target):
@@ -55,13 +48,8 @@ class ArchitectureGraph:
 
         for dependency in self.graph["dependencies"]:
             if dependency["type"] in self.CALL_DEPENDENCIES:
-                if (
-                    dependency["sourceElementId"] in sourceHierarchy
-                    and dependency["targetElementId"] in targetHierarchy
-                ):
+                if dependency["sourceElementId"] in sourceHierarchy and dependency["targetElementId"] in targetHierarchy:
                     yield dependency
 
     def countDependencies(self, source, target):
-        return sum(
-            dependency["count"] for dependency in self.findDependencies(source, target)
-        )
+        return sum(dependency["count"] for dependency in self.findDependencies(source, target))

@@ -34,20 +34,14 @@ def serialize(data: IssueTrackerData, outputFile: str, anonymize: bool) -> None:
 
     if anonymize:
         for workItem in data.workItems:
-            workItem.author = (
-                anonymizeAuthorName(workItem.author) if workItem.author else None
-            )
-            workItem.assignees = [
-                anonymizeAuthorName(assignee) for assignee in workItem.assignees
-            ]
+            workItem.author = anonymizeAuthorName(workItem.author) if workItem.author else None
+            workItem.assignees = [anonymizeAuthorName(assignee) for assignee in workItem.assignees]
         for pr in data.pullRequests:
             pr.assignees = [anonymizeAuthorName(assignee) for assignee in pr.assignees]
             pr.reviewers = [anonymizeAuthorName(reviewer) for reviewer in pr.reviewers]
 
     with open(outputFile, "w", encoding="utf8") as f:
-        dump(
-            asdict(data), f, indent=4, ensure_ascii=False, default=serializeFieldToJSON
-        )
+        dump(asdict(data), f, indent=4, ensure_ascii=False, default=serializeFieldToJSON)
 
 
 def serializeFieldToJSON(field: str) -> str:
@@ -61,9 +55,5 @@ def anonymizeAuthorName(name: str) -> str:
 
 
 def filterIssueData(issueData: IssueTrackerData, excludeLabels: list[str]) -> None:
-    def isExcluded(labels):
-        return bool(set(labels) & set(excludeLabels))
-
-    issueData.workItems = [
-        workItem for workItem in issueData.workItems if not isExcluded(workItem.labels)
-    ]
+    isExcluded = lambda labels: bool(set(labels) & set(excludeLabels))
+    issueData.workItems = [workItem for workItem in issueData.workItems if not isExcluded(workItem.labels)]

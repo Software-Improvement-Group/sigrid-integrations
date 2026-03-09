@@ -3,7 +3,7 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-#
+# 
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
@@ -24,16 +24,14 @@ class SigridApiClient:
         self.token = token
 
     def callEndPoint(self, path, body=None):
-        request = urllib.request.Request(
-            f"{self.sigridURL}/rest/analysis-results/api/v1{path}", body
-        )
+        request = urllib.request.Request(f"{self.sigridURL}/rest/analysis-results/api/v1{path}", body)
         request.add_header("Accept", "application/json")
         request.add_header("Authorization", f"Bearer {self.token}".encode("utf8"))
         response = urllib.request.urlopen(request)
-
+        
         if response.status >= 400:
             raise Exception(f"Sigrid API returns HTTP status {response.status}")
-
+        
         responseBody = response.read().decode("utf8")
         return json.loads(responseBody)
 
@@ -44,14 +42,14 @@ class SigridApiClient:
     def fetchMaintainability(self):
         response = self.callEndPoint(f"/maintainability/{self.customer}")
         return sorted(response["systems"], key=lambda e: -e["volumeInPersonMonths"])
-
+        
     def fetchMetadata(self):
         response = self.callEndPoint(f"/system-metadata/{self.customer}")
         return {system["systemName"]: system for system in response}
-
+        
     def fetchSystemMetadata(self, system):
         return self.callEndPoint(f"/system-metadata/{self.customer}/{system}")
-
+        
     def fetchPortfolioObjectives(self):
         response = self.callEndPoint(f"/objectives/{self.customer}")
         # Use a deterministic sort order, since the API returns objectives
@@ -64,9 +62,7 @@ class SigridApiClient:
             start = start.strftime("%Y-%m-%d")
         if isinstance(end, datetime):
             end = end.strftime("%Y-%m-%d")
-        response = self.callEndPoint(
-            f"/objectives-evaluation/{self.customer}?startDate={start}&endDate={end}"
-        )
+        response = self.callEndPoint(f"/objectives-evaluation/{self.customer}?startDate={start}&endDate={end}")
         return response["systems"]
 
     def fetchArchitectureGraph(self, system):

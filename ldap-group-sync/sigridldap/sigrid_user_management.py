@@ -28,15 +28,9 @@ class SigridUserManagement:
 
     def callEndPoint(self, method: str, path: str, body=None):
         jsonBody = json.dumps(body).encode("utf8") if body is not None else None
-        sslContext = (
-            ssl.create_default_context(cafile=os.getenv("SIGRID_CA_CERT"))
-            if os.environ.get("SIGRID_CA_CERT")
-            else None
-        )
+        sslContext = ssl.create_default_context(cafile=os.getenv("SIGRID_CA_CERT")) if os.environ.get("SIGRID_CA_CERT") else None
 
-        request = urllib.request.Request(
-            f"{self.sigridURL}{path}", jsonBody, method=method
-        )
+        request = urllib.request.Request(f"{self.sigridURL}{path}", jsonBody, method=method)
         request.add_header("Accept", "application/json")
         request.add_header("Content-Type", "application/json")
         request.add_header("Authorization", f"Bearer {self.token}".encode("utf8"))
@@ -51,51 +45,35 @@ class SigridUserManagement:
             sys.exit(1)
 
     def listUserGroups(self):
-        response = self.callEndPoint(
-            "GET", f"/rest/auth/api/user-management/{self.customer}/groups"
-        )
+        response = self.callEndPoint("GET", f"/rest/auth/api/user-management/{self.customer}/groups")
         return response["groups"]
 
     def createUserGroup(self, name: str):
-        return self.callEndPoint(
-            "POST",
-            f"/rest/auth/api/user-management/{self.customer}/groups",
-            {
-                "name": name,
-                "description": "Sigrid user group created automatically based on LDAP group synchronization.",
-                "users": [],
-                "systems": [],
-            },
-        )
+        return self.callEndPoint("POST", f"/rest/auth/api/user-management/{self.customer}/groups", {
+            "name": name,
+            "description": "Sigrid user group created automatically based on LDAP group synchronization.",
+            "users": [],
+            "systems": []
+        })
 
     def deleteUserGroup(self, groupId: str):
-        return self.callEndPoint(
-            "DELETE", f"/rest/auth/api/user-management/{self.customer}/groups/{groupId}"
-        )
+        return self.callEndPoint("DELETE", f"/rest/auth/api/user-management/{self.customer}/groups/{groupId}")
 
     def updateGroupMembers(self, groupId: str, userIds: list[str]):
-        return self.callEndPoint(
-            "PUT",
-            f"/rest/auth/api/user-management/{self.customer}/groups/{groupId}/members",
-            {"users": userIds},
-        )
+        return self.callEndPoint("PUT", f"/rest/auth/api/user-management/{self.customer}/groups/{groupId}/members", {
+            "users": userIds
+        })
 
     def listUsers(self):
-        response = self.callEndPoint(
-            "GET", f"/rest/auth/api/user-management/{self.customer}/users"
-        )
+        response = self.callEndPoint("GET", f"/rest/auth/api/user-management/{self.customer}/users")
         return response["users"]
 
     def createUser(self, email: str, firstName: str, lastName: str):
-        return self.callEndPoint(
-            "POST",
-            f"/rest/auth/api/user-management/{self.customer}/users",
-            {
-                "userInfo": {
-                    "firstName": firstName,
-                    "lastName": lastName,
-                    "emailAddress": email,
-                },
-                "isSSO": True,
+        return self.callEndPoint("POST", f"/rest/auth/api/user-management/{self.customer}/users", {
+            "userInfo": {
+                "firstName": firstName,
+                "lastName": lastName,
+                "emailAddress": email
             },
-        )
+            "isSSO": True
+        })

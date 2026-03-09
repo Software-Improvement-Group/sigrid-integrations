@@ -29,15 +29,13 @@ OPEN_SOURCE_LDAP_CONFIG = LdapConfig(
     groupDN="dc=example,dc=com",
     groupQuery="objectclass=groupOfUniqueNames",
     groupNameAttr="cn",
-    groupMemberAttr="uniqueMember",
+    groupMemberAttr="uniqueMember"
 )
 
 
 def testConnectLDAP():
     ldapConnection = LdapConnection(OPEN_SOURCE_LDAP_CONFIG)
-    users = ldapConnection.connection.search_s(
-        OPEN_SOURCE_LDAP_CONFIG.bindDN, ldap.SCOPE_SUBTREE, "objectclass=*"
-    )
+    users = ldapConnection.connection.search_s(OPEN_SOURCE_LDAP_CONFIG.bindDN, ldap.SCOPE_SUBTREE, "objectclass=*")
 
     assert len(users) == 1
     assert users[0][1]["cn"][0].decode("utf8") == "read-only-admin"

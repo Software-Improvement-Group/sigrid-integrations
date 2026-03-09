@@ -25,21 +25,10 @@ from sigridaq.graphviz import exportDot
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser(
-        description="Exports data from Sigrid's Architecture Quality."
-    )
-    parser.add_argument(
-        "--customer", type=str, required=True, help="Sigrid customer name."
-    )
-    parser.add_argument(
-        "--system", type=str, required=True, help="Sigrid customer name."
-    )
-    parser.add_argument(
-        "--format",
-        choices=["json", "dot", "pdf", "png"],
-        required=True,
-        help="Export format.",
-    )
+    parser = ArgumentParser(description="Exports data from Sigrid's Architecture Quality.")
+    parser.add_argument("--customer", type=str, required=True, help="Sigrid customer name.")
+    parser.add_argument("--system", type=str, required=True, help="Sigrid customer name.")
+    parser.add_argument("--format", choices=["json", "dot", "pdf", "png"], required=True, help="Export format.")
     parser.add_argument("--out", type=str, required=True, help="Output directory.")
     parser.add_argument("--sigridurl", type=str, default="https://sigrid-says.com")
     args = parser.parse_args()
@@ -48,13 +37,9 @@ if __name__ == "__main__":
         print("Missing environment variable SIGRID_CI_TOKEN")
         sys.exit(1)
 
-    request = urllib.request.Request(
-        f"{args.sigridurl}/rest/analysis-results/api/v1/architecture-quality/{args.customer}/{args.system}/raw"
-    )
+    request = urllib.request.Request(f"{args.sigridurl}/rest/analysis-results/api/v1/architecture-quality/{args.customer}/{args.system}/raw")
     request.add_header("Accept", "application/json")
-    request.add_header(
-        "Authorization", f"Bearer {os.environ['SIGRID_CI_TOKEN']}".encode("utf8")
-    )
+    request.add_header("Authorization", f"Bearer {os.environ['SIGRID_CI_TOKEN']}".encode("utf8"))
     with urllib.request.urlopen(request) as response:
         architectureGraph = ArchitectureGraph(json.load(response))
 
@@ -62,11 +47,7 @@ if __name__ == "__main__":
     os.makedirs(outputDir, exist_ok=True)
 
     if args.format == "json":
-        with open(
-            f"{outputDir}/{args.customer}-{args.system}-architecture.json",
-            "w",
-            encoding="utf8",
-        ) as f:
+        with open(f"{outputDir}/{args.customer}-{args.system}-architecture.json", "w", encoding="utf8") as f:
             json.dump(architectureGraph, f, indent=2)
     else:
         dotFile = f"{outputDir}/{args.customer}-{args.system}-architecture.dot"

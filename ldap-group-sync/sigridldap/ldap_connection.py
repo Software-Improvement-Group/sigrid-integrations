@@ -52,23 +52,15 @@ class LdapConnection:
         self.config = config
         self.connection = ldap.initialize(config.url)
         if os.environ.get("LDAP_CA_CERT"):
-            self.connection.set_option(
-                ldap.OPT_X_TLS_CACERTFILE, os.environ["LDAP_CA_CERT"]
-            )
+            self.connection.set_option(ldap.OPT_X_TLS_CACERTFILE, os.environ["LDAP_CA_CERT"])
             self.connection.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
             self.connection.set_option(ldap.OPT_X_TLS_DEMAND, True)
             self.connection.conn.start_tls_s()
         self.connection.simple_bind_s(config.bindDN, config.bindPassword)
 
     def listUsers(self) -> list[LdapUser]:
-        objects = self.connection.search_s(
-            self.config.userDN, ldap.SCOPE_SUBTREE, self.config.userQuery
-        )
-        return [
-            self.parseUserObject(object)
-            for object in objects
-            if self.config.userEmailAttr in object[1]
-        ]
+        objects = self.connection.search_s(self.config.userDN, ldap.SCOPE_SUBTREE, self.config.userQuery)
+        return [self.parseUserObject(object) for object in objects if self.config.userEmailAttr in object[1]]
 
     def parseUserObject(self, object) -> LdapUser:
         uid = object[0]
@@ -78,14 +70,10 @@ class LdapConnection:
         return LdapUser(uid, email, firstName, lastName)
 
     def listGroups(self) -> list[LdapGroup]:
-        objects = self.connection.search_s(
-            self.config.groupDN, ldap.SCOPE_SUBTREE, self.config.groupQuery
-        )
+        objects = self.connection.search_s(self.config.groupDN, ldap.SCOPE_SUBTREE, self.config.groupQuery)
         return [self.parseGroupObject(object) for object in objects]
 
     def parseGroupObject(self, object) -> LdapGroup:
         name = object[1][self.config.groupNameAttr][0].decode("utf8")
-        userIds = [
-            member.decode("utf8") for member in object[1][self.config.groupMemberAttr]
-        ]
+        userIds = [member.decode("utf8") for member in object[1][self.config.groupMemberAttr]]
         return LdapGroup(name, userIds)
