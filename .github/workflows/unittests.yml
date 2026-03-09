@@ -3,6 +3,12 @@ on:
   pull_request:
   push:
     branches: [main]
+
+permissions:
+  checks: write
+  pull-requests: write
+  contents: read
+
 jobs:
   unittests:
     name: "Python unit tests"
@@ -12,7 +18,12 @@ jobs:
     steps:
       - name: "Check out repository"
         uses: actions/checkout@v4
-        
+
+      - name: "Set up Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
       - name: "Install native dependencies"
         run: |
           sudo apt update
@@ -20,25 +31,27 @@ jobs:
 
       - name: "Install Python dependencies"
         run: |
-          pip3 install -e "./report-generator/[test]"
-          pip3 install -r ldap-group-sync/requirements.txt
-      
+          pip install -e "./report-generator[test]"
+          pip install -r ldap-group-sync/requirements.txt
+
       - name: "Report Generator tests"
         run: |
           pytest --ignore=ldap-group-sync/ --junitxml=results.xml
-          
+
       - name: "LDAP Group Sync tests"
         run: |
           cd ldap-group-sync
-          python3 -m pytest
+          python -m pytest
 
       - name: "Upload test results"
         uses: actions/upload-artifact@v4
+        if: (!cancelled())
         with:
           name: test-results
           path: results.xml
 
       - name: "Publish test results"
         uses: EnricoMi/publish-unit-test-result-action@v2
+        if: (!cancelled())
         with:
           files: results.xml
