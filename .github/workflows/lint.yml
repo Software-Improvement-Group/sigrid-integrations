@@ -16,11 +16,11 @@ jobs:
       - name: "Ruff check"
         uses: astral-sh/ruff-action@v3
         with:
-          args: "check"
+          args: "check --output-format=github"
           src: "./report-generator"
 
       - name: "Ruff format check"
         uses: astral-sh/ruff-action@v3
         with:
-          args: "format --check"
+          args: "format --check --diff"
           src: "./report-generator"
