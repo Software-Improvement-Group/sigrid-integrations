@@ -1,5 +1,5 @@
 ---
-description: "Apply during code review for changes to placeholder implementations."
+description: "Apply when reviewing, creating, or refactoring placeholder implementations and their base classes."
 applyTo: "report-generator/src/report_generator/generator/placeholders/implementations/**/*.py"
 ---
 
@@ -36,3 +36,15 @@ handled via a method override in that specific family. Watch for:
 - Base class methods gaining parameters that most subclasses ignore or default to `None`.
 - Callback wrappers forwarding "mystery" arguments that only one caller provides.
 - `= None` default arguments added purely to avoid `TypeError` in callers that don't use the parameter.
+
+## Call `value_cb()` once, before the rendering loop
+
+Every call to `value_cb()` re-executes the full data computation pipeline — API calls, portfolio aggregation, color
+mapping, and anything else in `value()`. Repeating this per shape is a silent performance bug that scales with the
+number of placeholder occurrences in the template.
+
+In every `resolve_pptx` / `resolve_docx` method, call `value_cb()` (or `value_fn()`) **once before** iterating over
+shapes, charts, paragraphs, or tables. The computed value does not depend on individual element dimensions or
+positions — only the subsequent draw/render step does.
+
+Flag any `resolve_*` method where `value_cb()` or `value_fn()` is invoked inside a shape/chart/paragraph/table loop.
