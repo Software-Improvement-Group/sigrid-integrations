@@ -1,4 +1,4 @@
-name: unittests
+name: Tests
 on:
   pull_request:
   push:
@@ -10,48 +10,57 @@ permissions:
   contents: read
 
 jobs:
-  unittests:
-    name: "Python unit tests"
+  unit-tests:
+    name: "Unit tests"
     runs-on: ubuntu-latest
-    env:
-      REPORT_GENERATOR_TESTS_TOKEN: ${{ secrets.SIGRID_CI_TOKEN }}
     steps:
-      - name: "Check out repository"
-        uses: actions/checkout@v4
-
-      - name: "Set up Python"
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.14"
-
       - name: "Install native dependencies"
-        run: |
-          sudo apt update
-          sudo apt install -y ldap-utils slapd enchant-2 libldap2-dev libsasl2-dev apparmor-utils
-
+        run: sudo apt update && sudo apt install -y ldap-utils slapd enchant-2 libldap2-dev libsasl2-dev apparmor-utils
       - name: "Install Python dependencies"
         run: |
           pip install -e "./report-generator[test]"
           pip install -r ldap-group-sync/requirements.txt
-
-      - name: "Report Generator tests"
-        run: |
-          pytest --ignore=ldap-group-sync/ --junitxml=results.xml
-
+      - name: "Report Generator unit tests"
+        run: pytest --ignore=ldap-group-sync/ --junitxml=unit-results.xml
       - name: "LDAP Group Sync tests"
-        run: |
-          cd ldap-group-sync
-          python -m pytest
-
-      - name: "Upload test results"
-        uses: actions/upload-artifact@v4
+        run: cd ldap-group-sync && python -m pytest
+      - uses: actions/upload-artifact@v4
         if: (!cancelled())
         with:
-          name: test-results
-          path: results.xml
-
-      - name: "Publish test results"
-        uses: EnricoMi/publish-unit-test-result-action@v2
+          name: unit-test-results
+          path: unit-results.xml
+      - uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2
         if: (!cancelled())
         with:
-          files: results.xml
+          files: unit-results.xml
+
+  integration-tests:
+    name: "Integration tests"
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    env:
+      REPORT_GENERATOR_TESTS_TOKEN: ${{ secrets.SIGRID_CI_TOKEN_OPENDEMO }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: "Install native dependencies"
+        run: sudo apt update && sudo apt install -y ldap-utils slapd enchant-2 libldap2-dev libsasl2-dev apparmor-utils
+      - name: "Install Python dependencies"
+        run: pip install -e "./report-generator[test]"
+      - name: "Report Generator integration tests"
+        run: pytest -m integration --ignore=ldap-group-sync/ --junitxml=integration-results.xml
+      - uses: actions/upload-artifact@v4
+        if: (!cancelled())
+        with:
+          name: integration-test-results
+          path: integration-results.xml
+      - uses: EnricoMi/publish-unit-test-result-action@c950f6fb443cb5af20a377fd0dfaa78838901040 # v2
+        if: (!cancelled())
+        with:
+          files: integration-results.xml
