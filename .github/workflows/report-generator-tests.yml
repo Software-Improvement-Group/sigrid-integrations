@@ -1,13 +1,14 @@
 name: Tests
+
 on:
   pull_request:
+    paths:
+      - "report-generator/**"
   push:
     branches: [main]
-
-permissions:
-  checks: write
-  pull-requests: write
-  contents: read
+    paths:
+      - '.github/workflows/report-generator-tests.yml'
+      - "report-generator/**"
 
 jobs:
   unit-tests:
