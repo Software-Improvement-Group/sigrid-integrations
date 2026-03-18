@@ -378,6 +378,17 @@ class ArchitecturePortfolioTreemapPlaceholder(EndDatePortfolioTreemapPlaceholder
         fig_data = cls.create_end_date_portfolio_treemap(grouping=parameter.lower(), rating_func=f, rating_rounding_func=formatters.star_rating_round, determine_color_function=cls.determine_rating_color)
         return cls.draw_image(width=additional_parameter['width'], height=additional_parameter['height'], fig_data=fig_data)
     
+class ArchitectureKnowledgeDistributionPortfolioTreemapPlaceholder(EndDatePortfolioTreemapPlaceholder):
+    """Creates a portfolio treemap where the color is determined by the architecture quality knowledge distribution rating of the individual systems."""
+
+    key = "PORTFOLIO_PERIOD_KNOWLEDGE_DISTRIBUTION_GROUPED_BY_{parameter}"
+
+    @classmethod
+    def value(cls, parameter, additional_parameter=None):
+        f = lambda t: architecture_portfolio_data.end_snapshot(t)['ratings']['systemProperties']['knowledgeDistribution'] if architecture_portfolio_data.end_snapshot(t) else 0
+        fig_data = cls.create_end_date_portfolio_treemap(grouping=parameter.lower(), rating_func=f, rating_rounding_func=formatters.star_rating_round, determine_color_function=cls.determine_rating_color)
+        return cls.draw_image(width=additional_parameter['width'], height=additional_parameter['height'], fig_data=fig_data)
+    
 
 class MaintainabilityDeltaQualityNewCodePortfolioTreemapPlaceholder(EndDatePortfolioTreemapPlaceholder):
     """Creates a portfolio treemap where the color is determined by the delta quality of maintainability rating (new code) of the individual systems."""

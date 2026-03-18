@@ -44,13 +44,35 @@ class ArchitecturePortfolioData(AbstractPortfolioModel):
             self._extract_architecture_rating
         )
     
+    @cached_property
+    def get_rating_distribution_percentages_knowledge_distribution(self):
+        """Calculate percentage of systems in each rating category for knowledge distribution."""
+        return portfolio_utils._get_rating_distribution_percentages(
+            self.data,
+            self._extract_knowledge_distribution_rating
+        )
+    
     def _extract_architecture_rating(self, system):
         """Extract architecture rating from a system."""
         if 'ratings' not in system or 'architecture' not in system['ratings']:
             return None
         return system['ratings']['architecture']
     
+    def _extract_knowledge_distribution_rating(self, system):
+        """Extract knowledge distribution rating from a system."""
+        if 'ratings' not in system or 'systemProperties' not in system['ratings'] or 'knowledgeDistribution' not in system['ratings']['systemProperties']:
+            return None
+        return system['ratings']['systemProperties']['knowledgeDistribution']
+    
     def _get_rating_and_volume(self, system):
+        """Extract rating and volume for a system."""
+        return portfolio_utils._get_rating_and_volume_from_system(
+            system,
+            self._extract_architecture_rating,
+            'system'
+        )
+    
+    def _get_rating_and_volume_knowledge_distribution(self, system):
         """Extract rating and volume for a system."""
         return portfolio_utils._get_rating_and_volume_from_system(
             system,
@@ -64,6 +86,14 @@ class ArchitecturePortfolioData(AbstractPortfolioModel):
         return portfolio_utils._calculate_weighted_average_rating(
             self.data,
             self._get_rating_and_volume
+        )
+    
+    @cached_property
+    def weighted_average_rating_knowledge_distribution(self):
+        """Calculate volume-weighted average knowledge distribution rating across all systems."""
+        return portfolio_utils._calculate_weighted_average_rating(
+            self.data,
+            self._get_rating_and_volume_knowledge_distribution
         )
 
 architecture_portfolio_data = ArchitecturePortfolioData()
