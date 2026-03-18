@@ -12,32 +12,32 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from report_generator.generator.data_models import architecture_portfolio_data
+from report_generator.generator.data_models import knowledge_distribution_portfolio_data
 from .base import text_placeholder
 from report_generator.generator.formatters.formatters import star_rating_round
 
 @text_placeholder()
 def portfolio_knowl_above_market():
     """Percentage of systems scoring above market average (≥3.5 stars) on architecture quality."""
-    distribution = architecture_portfolio_data.get_rating_distribution_percentages_knowledge_distribution
+    distribution = knowledge_distribution_portfolio_data.get_rating_distribution_percentages
     return distribution['above_market']
 
 
 @text_placeholder()
 def portfolio_knowl_market_average():
     """Percentage of systems scoring market average (2.5-3.5 stars) on architecture quality."""
-    distribution = architecture_portfolio_data.get_rating_distribution_percentages_knowledge_distribution
+    distribution = knowledge_distribution_portfolio_data.get_rating_distribution_percentages
     return distribution['market_average']
 
 
 @text_placeholder()
 def portfolio_knowl_below_market():
     """Percentage of systems scoring below market average (<2.5 stars) on architecture quality."""
-    distribution = architecture_portfolio_data.get_rating_distribution_percentages_knowledge_distribution
+    distribution = knowledge_distribution_portfolio_data.get_rating_distribution_percentages
     return distribution['below_market']
 
 
 @text_placeholder()
 def portfolio_knowl_avg_rating():
     """Volume-weighted average architecture rating across all systems in the portfolio."""
-    return star_rating_round(architecture_portfolio_data.weighted_average_rating_knowledge_distribution)
+    return star_rating_round(knowledge_distribution_portfolio_data.weighted_average_rating)
