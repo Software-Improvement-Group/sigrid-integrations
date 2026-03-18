@@ -54,7 +54,7 @@ class KnowledgeDistributionPortfolioData(AbstractPortfolioModel):
         """Extract rating and volume for a system."""
         return portfolio_utils._get_rating_and_volume_from_system(
             system,
-            self._extract_architecture_rating,
+            self._extract_knowledge_distribution_rating,
             'system'
         )
     
@@ -63,7 +63,7 @@ class KnowledgeDistributionPortfolioData(AbstractPortfolioModel):
         """Calculate volume-weighted average knowledge distribution rating across all systems."""
         return portfolio_utils._calculate_weighted_average_rating(
             self.data,
-            self._get_rating_and_volume_knowledge_distribution
+            self._get_rating_and_volume
         )
-
+    
 knowledge_distribution_portfolio_data = KnowledgeDistributionPortfolioData()
