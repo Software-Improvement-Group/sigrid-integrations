@@ -76,6 +76,12 @@ class _AbstractPortfolioTreemapPlaceholder(_AbstractTreemapPlaceholder, ABC):
                 team_name = metadata['teamNames'][0]
         return team_name
     
+    @staticmethod
+    def _process_division_grouping(metadata):
+        if metadata['divisionName']:
+            return metadata['divisionName']
+        return "Unset"
+    
 
     @staticmethod
     def _process_lifecycle_grouping(metadata):
@@ -98,6 +104,7 @@ class _AbstractPortfolioTreemapPlaceholder(_AbstractTreemapPlaceholder, ABC):
 
     grouping_processors = {
         'team' : _process_team_grouping.__func__,
+        'division': _process_division_grouping.__func__,
         'lifecycle' : _process_lifecycle_grouping.__func__,
         'business_criticality' : _process_business_criticality_grouping.__func__,
         'deployment' : _process_deployment_grouping.__func__
