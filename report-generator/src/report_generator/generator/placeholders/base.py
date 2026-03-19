@@ -107,24 +107,35 @@ class ParameterizedPlaceholder(Placeholder, ABC):
     multiple dynamic keys. It expects the `key` attribute to contain a formatting marker
     (specifically `{parameter}`) which is replaced during resolution.
 
+    For multi-dimensional placeholders (e.g., `{metric}` and `{parameter}`), set both
+    `allowed_metrics` and `allowed_parameters` to generate all combinations.
+
     Attributes:
         allowed_parameters (ParameterList): A list of values (str, int, or Enum) used to
                                             generate unique keys and calculate values.
+        allowed_metrics (ParameterList): Optional second dimension of parameters. If set,
+                                         creates combinations with allowed_parameters.
     """
     __parameterized_placeholder__ = True
     allowed_parameters: ParameterList
+    allowed_metrics: ParameterList = None
 
     @classmethod
     def resolve(cls, report: Report) -> None:
         """
         Iterates through allowed parameters to resolve multiple instances of this placeholder.
 
-        For every parameter in `allowed_parameters`, this method:
+        For single-parameter placeholders:
         1. Generates a specific key by replacing '{parameter}' in `cls.key`.
         2. Creates a lambda function to pass the specific parameter to `cls.value`.
         3. Calls the report-specific resolution method (e.g., `resolve_pptx`).
 
-        The constructed `value_p` callable accepts an `optional_parameter`. This allows the
+        For multi-parameter placeholders (when `allowed_metrics` is set):
+        1. Iterates through all combinations of metrics and parameters.
+        2. Replaces both '{metric}' and '{parameter}' in the key.
+        3. Passes both metric and parameter to `cls.value`.
+
+        The constructed value callable accepts an `optional_parameter`. This allows the
         underlying report generator (e.g., the PowerPoint resolver) to pass additional
         context or configuration—such as chart filters or formatting options—back into
         `cls.value` during execution.
@@ -133,17 +144,24 @@ class ParameterizedPlaceholder(Placeholder, ABC):
             report (Report): The report instance where the placeholders should be resolved.
         """
         resolve_method_name = cls._determine_resolve_method(report.type)
-
         if not resolve_method_name:
             return
 
-        for parameter in cls.allowed_parameters:
-            key_p = cls.key.replace('{parameter}', str(parameter))
+        # Treat single-parameter as multi-parameter with one dimension
+        metrics = cls.allowed_metrics if cls.allowed_metrics is not None else [None]
 
-            try:
-                value_p = lambda optional_parameter=None, p=parameter: cls.value(p, optional_parameter)
-                getattr(cls, resolve_method_name)(report, key_p, value_p)
-            except SigridAPIRequestFailed as e:
-                logging.info(f'Failed to resolve {key_p}: {e}')
-            except (KeyError, AttributeError, ValueError) as e:
-                logging.warning(f'Failed to resolve {key_p}: Value not found ({type(e).__name__}: {e})')
+        for metric in metrics:
+            for parameter in cls.allowed_parameters:
+                key_p = cls.key.replace('{parameter}', str(parameter))
+                if metric is not None:
+                    key_p = key_p.replace('{metric}', str(metric))
+                    value_p = lambda optional_parameter=None, m=metric, p=parameter: cls.value(m, p, optional_parameter)
+                else:
+                    value_p = lambda optional_parameter=None, p=parameter: cls.value(p, optional_parameter)
+                
+                try:
+                    getattr(cls, resolve_method_name)(report, key_p, value_p)
+                except SigridAPIRequestFailed as e:
+                    logging.info(f'Failed to resolve {key_p}: {e}')
+                except (KeyError, AttributeError, ValueError) as e:
+                    logging.warning(f'Failed to resolve {key_p}: Value not found ({type(e).__name__}: {e})')

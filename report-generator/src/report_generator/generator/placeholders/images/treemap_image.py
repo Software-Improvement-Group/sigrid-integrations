@@ -16,6 +16,7 @@ from typing import Tuple, ClassVar, Dict, Callable
 import logging
 
 from report_generator.generator import report_utils
+from report_generator.generator.constants import ArchMetric
 from report_generator.generator.formatters import formatters
 from report_generator.generator.data_models import maintainability_portfolio_data, security_ratings_portfolio_data, architecture_portfolio_data, osh_portfolio_data
 from report_generator.generator.data_models import maintainability_delta_quality_new_code, maintainability_delta_quality_changed_code, maintainability_delta_quality_new_and_changed_code
@@ -385,14 +386,17 @@ class ArchitecturePortfolioTreemapPlaceholder(EndDatePortfolioTreemapPlaceholder
         fig_data = cls.create_end_date_portfolio_treemap(grouping=parameter.lower(), rating_func=f, rating_rounding_func=formatters.star_rating_round, determine_color_function=cls.determine_rating_color)
         return cls.draw_image(width=additional_parameter['width'], height=additional_parameter['height'], fig_data=fig_data)
     
-class ArchitectureKnowledgeDistributionPortfolioTreemapPlaceholder(EndDatePortfolioTreemapPlaceholder):
-    """Creates a portfolio treemap where the color is determined by the architecture quality knowledge distribution rating of the individual systems."""
+class ArchitectureMetricPortfolioTreemapPlaceholder(EndDatePortfolioTreemapPlaceholder):
+    """Creates a portfolio treemap where the color is determined by a provided architecture quality metric of the individual systems."""
 
-    key = "PORTFOLIO_PERIOD_KNOWLEDGE_DISTRIBUTION_GROUPED_BY_{parameter}"
+    key = "PORTFOLIO_PERIOD_AQ_{metric}_GROUPED_BY_{parameter}"
+    allowed_metrics = ArchMetric.values()
 
     @classmethod
-    def value(cls, parameter, additional_parameter=None):
-        f = lambda t: architecture_portfolio_data.end_snapshot(t)['ratings']['systemProperties']['knowledgeDistribution'] if architecture_portfolio_data.end_snapshot(t) else 0
+    def value(cls, metric, parameter, additional_parameter=None):
+        arch_metric = ArchMetric(metric)
+        metric_api_field = arch_metric.to_json_name()
+        f = lambda t: architecture_portfolio_data.end_snapshot(t)['ratings']['systemProperties'][metric_api_field] if architecture_portfolio_data.end_snapshot(t) else 0
         fig_data = cls.create_end_date_portfolio_treemap(grouping=parameter.lower(), rating_func=f, rating_rounding_func=formatters.star_rating_round, determine_color_function=cls.determine_rating_color)
         return cls.draw_image(width=additional_parameter['width'], height=additional_parameter['height'], fig_data=fig_data)
     
