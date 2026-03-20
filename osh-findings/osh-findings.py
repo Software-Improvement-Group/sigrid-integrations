@@ -24,7 +24,7 @@ from http.client import RemoteDisconnected
 from json import JSONDecodeError
 import ssl
 
-from terminaltables3 import SingleTable
+from tabulate import tabulate
 from typing import Dict, List
 import urllib.parse
 import urllib.request
@@ -63,6 +63,9 @@ VULNERABILITY_FINDING_TYPE = FindingType("vulnerability risk", "OSH_MAX_SEVERITY
 LEGAL_FINDING_TYPE = FindingType("license risk", "OSH_MAX_LICENSE_RISK", "sigrid:risk:legal", 2)
 FRESHNESS_FINDING_TYPE = FindingType("freshness risk", "OSH_MAX_FRESHNESS_RISK", "sigrid:risk:freshness", 4)
 
+NARROW_COLUMN_WIDTH = 30
+WIDE_COLUMN_WIDTH = 80
+
 
 class SigridApiClient:
     
@@ -82,8 +85,7 @@ class SigridApiClient:
         try:
             req = urllib.request.Request(f'{self.sigrid_url}{path}')
             req.add_header('Authorization', 'Bearer ' + os.environ.get(SIGRID_CI_TOKEN_ENV_NAME))
-            context = ssl._create_unverified_context()
-            with urllib.request.urlopen(req, context=context) as response:
+            with urllib.request.urlopen(req) as response:
                 return json.loads(self.handle_response(response))
         except URLError as e:
             LOG.error('Unable to connect to Sigrid API: %s', str(e))
@@ -127,6 +129,9 @@ def get_locations(component) -> str:
 def get_warning_text(text: str) -> str:
     return f"\033[91m\033[1m{text}\033[0m"
 
+def get_bold_text(text: str) -> str:
+    return f"\033[1m{text}\033[0m"
+
 def get_colored_risk(risk: str, objective: str) -> str:
     if Risk[risk].value > Risk[objective].value:
         return get_warning_text(risk)
@@ -138,10 +143,12 @@ def get_vulnerability_risks(sbom: Dict, objective: str) -> int:
     libraries_not_meeting_objective = len([dep for dep in sbom.get('components') if risk_exceeds_objective(dep, VULNERABILITY_FINDING_TYPE.risk_name, objective) and not is_transitive(dep)])
 
     if findings:
-        table = [["risk", "library", "type", "locations", "description"]]
+        headers = ["risk", "library", "type", "locations", "description"]
+        max_column_width = [None, NARROW_COLUMN_WIDTH, None, NARROW_COLUMN_WIDTH, WIDE_COLUMN_WIDTH]
         table_data = []
         for finding in findings:
             vulnerability_details = [v for v in sbom.get('vulnerabilities') if finding.get('bom-ref') in [ ref['ref'] for ref in  v['affects']]]
+            vulnerability_details.sort(key=lambda v: v.get('ratings')[0].get('score'), reverse=True)
             table_data.append([
                 get_property_value(finding, VULNERABILITY_FINDING_TYPE.risk_name),
                 finding.get('name'),
@@ -149,17 +156,15 @@ def get_vulnerability_risks(sbom: Dict, objective: str) -> int:
                 get_locations(component=finding),
                 "\n\n".join([summarize_vulnerability(v) for v in vulnerability_details])
             ])
-        table.extend(sort_and_color_table(table_data, objective))
 
-        table_instance = SingleTable(table, "Detected vulnerabilities")
-        table_instance.inner_row_border = True
-        print(table_instance.table + "\n\n")
+        print(get_bold_text("Detected vulnerabilities"))
+        print(tabulate(sort_and_color_table(table_data, objective), headers=headers, tablefmt="grid", maxcolwidths=max_column_width))
         if libraries_not_meeting_objective > 0:
             return VULNERABILITY_FINDING_TYPE.exit_code
     return 0
 
 def summarize_vulnerability(vulnerability: Dict) -> str:
-    details = [f"ID: {vulnerability.get('id')}", f"Published: {vulnerability.get('published')[:10]}"]
+    details = [f"ID: {get_bold_text(vulnerability.get('id'))}", f"Published: {vulnerability.get('published')[:10]}"]
     if vulnerability.get('ratings'):
         details.append(f"Severity: {vulnerability.get('ratings')[0].get('score')} ({vulnerability.get('ratings')[0].get('severity')})")
     if vulnerability.get('source', {}).get('url', None):
@@ -171,25 +176,31 @@ def summarize_vulnerability(vulnerability: Dict) -> str:
 
 
 def get_legal_risks(components: List[Dict], objective: str) -> int:
-    findings = [dep for dep in components if risk_exceeds_objective(dep, LEGAL_FINDING_TYPE.risk_name, objective) or get_property_value(dep, LEGAL_FINDING_TYPE.risk_name) == Risk.UNKNOWN.name]
+    findings = [dep for dep in components if include_for_license_risk(dep, objective)]
     libraries_not_meeting_objective = len([dep for dep in components if risk_exceeds_objective(dep, LEGAL_FINDING_TYPE.risk_name, objective)])
     if findings:
-        table = [["risk", "library", "location(s)", "license(s)"]]
+        headers = ["risk", "library", "location(s)", "license(s)"]
+        max_column_widths = [None, NARROW_COLUMN_WIDTH, NARROW_COLUMN_WIDTH, NARROW_COLUMN_WIDTH]
         table_data = []
         for finding in findings:
             table_data.append([
                 get_property_value(finding, LEGAL_FINDING_TYPE.risk_name),
                 finding.get('name'),
                 get_locations(finding),
-                "\n".join([l.get('license').get('name') for l in finding.get('licenses')])
+                "\n".join([l.get('license').get('name') for l in finding.get('licenses', None) if l])
             ])
-        table.extend(sort_and_color_table(table_data, objective))
-        table_instance = SingleTable(table, "Legal risks")
-        table_instance.inner_row_border = True
-        print(table_instance.table + "\n\n")
+
+        print(get_bold_text("Legal risks"))
+        print(tabulate(sort_and_color_table(table_data, objective), headers=headers, tablefmt="grid", maxcolwidths=max_column_widths))
         if libraries_not_meeting_objective > 0:
             return LEGAL_FINDING_TYPE.exit_code
     return 0
+
+def include_for_license_risk(finding: Dict, objective: str) -> bool:
+    # include licenses that exceed objective, and unknown license types (but not absent licenses)
+    return (risk_exceeds_objective(finding, LEGAL_FINDING_TYPE.risk_name, objective)
+     or ( get_property_value(finding, LEGAL_FINDING_TYPE.risk_name) == Risk.UNKNOWN.name
+          and get_property_value(finding, "license")))
 
 def sort_and_color_table(table: List[List], objective: str) -> List[List]:
     table = sorted(table, key= lambda row: (Risk[row[0]].value, row[1]), reverse=True)
@@ -201,7 +212,8 @@ def get_updates(components: List[Dict], objective: str) -> int:
     updates_available = [dep for dep in components if get_property_value(dep, NEXT_VERSION_PROPERTY) and not is_transitive(dep)]
     libraries_not_meeting_objective = len([dep for dep in components if risk_exceeds_objective(dep, FRESHNESS_FINDING_TYPE.risk_name, objective) and not is_transitive(dep)])
     if updates_available:
-        table = [["risk", "library", "location(s)", "versions"]]
+        headers = ["risk", "library", "location(s)", "versions"]
+        max_column_widths = [None, NARROW_COLUMN_WIDTH, NARROW_COLUMN_WIDTH, None]
         table_data = []
         for library in updates_available:
             table_data.append([
@@ -210,20 +222,26 @@ def get_updates(components: List[Dict], objective: str) -> int:
                 get_locations(library),
                 get_version_info(library)
             ])
-        table.extend(sort_and_color_table(table_data, objective))
 
-        table_instance = SingleTable(table, "Available updates")
-        table_instance.inner_row_border = True
-        print(table_instance.table + "\n\n")
+        print(get_bold_text("Available updates"))
+        print(tabulate(sort_and_color_table(table_data, objective), headers=headers, tablefmt="grid", maxcolwidths=max_column_widths))
         if libraries_not_meeting_objective > 0:
             return FRESHNESS_FINDING_TYPE.exit_code
     return 0
 
 def get_version_info(library: Dict) -> str:
-    result =  [f"Current version: {library.get('version')} ({get_property_value(library, RELEASE_DATE_PROPERTY)[:10]})",
-                f"Next version: {get_property_value(library, NEXT_VERSION_PROPERTY)} ({get_property_value(library, NEXT_VERSION_DATE_PROPERTY)[:10]})",
-                f"Latest version: {get_property_value(library, LATEST_VERSION_PROPERTY)} ({get_property_value(library, LATEST_VERSION_DATE_PROPERTY)[:10]})"]
+
+
+    result =  [f"Current version: {library.get('version')} {format_date(get_property_value(library, RELEASE_DATE_PROPERTY))}",
+                f"Next version: {get_property_value(library, NEXT_VERSION_PROPERTY)} {format_date(get_property_value(library, NEXT_VERSION_DATE_PROPERTY))}",
+                f"Latest version: {get_property_value(library, LATEST_VERSION_PROPERTY)} {format_date(get_property_value(library, LATEST_VERSION_DATE_PROPERTY))}"]
     return "\n".join(result)
+
+def format_date(datetime: str | None) -> str:
+    if datetime:
+        return f"({datetime[:10]})"
+    else:
+        return ""
 
 
 if __name__ == "__main__":

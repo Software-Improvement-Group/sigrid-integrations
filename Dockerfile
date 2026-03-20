@@ -25,6 +25,6 @@ RUN apk add --no-cache \
     && pip install --no-cache-dir -r /integrations/export-portfolio-dependencies/requirements.txt \
     && pip install --no-cache-dir -r /integrations/ldap-group-sync/requirements.txt
 
-ENV PATH="/integrations/objectives-report:/integrations/get-scope-file:/integrations/export-portfolio-dependencies:/integrations/polarion-integration:/integrations/issue-tracker-export:/integrations/ldap-group-sync:/integrations/osh-findings:/integrations/architecture-export:${PATH}"
+ENV PATH="/integrations/objectives-report:/integrations/get-scope-file:/integrations/export-portfolio-dependencies:/integrations/polarion-integration:/integrations/issue-tracker-export:/integrations/excel-exports:${PATH}"
 USER sigrid
 WORKDIR /home/sigrid
