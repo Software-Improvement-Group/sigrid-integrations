@@ -10,6 +10,7 @@ __pycache__
 out/
 .vscode/
 .grimp_cache/
+.import_linter_cache/
 
 # To protect against people accidentally running in this directory
 out.pptx
