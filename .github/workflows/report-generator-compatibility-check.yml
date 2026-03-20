@@ -1,4 +1,5 @@
-name: report-generator-compatibility-check
+name: Compatibility Check
+
 on:
   push:
     branches: [ main ]

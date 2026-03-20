@@ -9,6 +9,7 @@ __pycache__
 *.egg-info/
 out/
 .vscode/
+.grimp_cache/
 
 # To protect against people accidentally running in this directory
 out.pptx
