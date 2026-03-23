@@ -401,3 +401,19 @@ class MetadataCompletenessChartPlaceholder(_AbstractCategoryChartPlaceholder):
     def axis_label(cls):
         return "Percentage of portfolio"
 
+
+class SnapshotFreshnessChartPlaceholder(_AbstractCategoryChartPlaceholder):
+    key = "SNAPSHOT_FRESHNESS_CHART"
+
+    @classmethod
+    def labels(cls):
+        return ["Total", "1 week", "1 month", "3 months", "6 months", ">6 months"]
+
+    @classmethod
+    def series(cls):
+        return sigrid_hygiene_portfolio_data.get_snapshot_freshness()
+
+    @classmethod
+    def axis_label(cls):
+        return "Systems"
+

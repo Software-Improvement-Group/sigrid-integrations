@@ -15,6 +15,7 @@
 from functools import cached_property
 from report_generator.generator import sigrid_api
 from report_generator.generator.data_models.portfolio.base import AbstractPortfolioModel
+from datetime import datetime, timedelta
 
 import pandas as pd
 import numpy as np
@@ -60,10 +61,34 @@ class SigridHygienePortfolioData(AbstractPortfolioModel):
 
         return row
 
+
     def get_number_systems_complete_metadata(self):
         metadata_df = self._compute_metadata_dataframe()
         fully_complete_count = (metadata_df.sum(axis=1) == len(self.metadata_fields)).sum()
         return fully_complete_count
+
+
+    def get_snapshot_freshness(self):
+        metadata = {system["systemName"]: system for system in self.metadata}
+        active_systems = [name for name, meta in metadata.items() if meta["active"] and not meta["isDevelopmentOnly"]]
+        time_now = datetime.now()
+        days_7 = 0
+        days_30 = 0
+        days_90 = 0
+        days_180 = 0
+        days_more = 0
+
+        for system in active_systems:
+            snapshot_date = sigrid_api.get_architecture_findings(system)["snapshotDate"]
+            freshness = (time_now - datetime.fromisoformat(snapshot_date)).days
+
+            if freshness < 7: days_7 += 1
+            elif freshness < 30: days_30 += 1
+            elif freshness < 90: days_90 += 1
+            elif freshness < 180: days_180 += 1
+            else: days_more += 1
+
+        return [[len(active_systems), days_7, days_30, days_90, days_180, days_more]]
 
 
 sigrid_hygiene_portfolio_data = SigridHygienePortfolioData()
