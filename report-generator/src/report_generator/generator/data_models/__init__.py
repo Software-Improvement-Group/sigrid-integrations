@@ -29,6 +29,7 @@ from report_generator.generator.data_models.system.security import security_data
 from report_generator.generator.data_models.portfolio.security_portfolio import security_ratings_portfolio_data
 from report_generator.generator.data_models.portfolio.progress_sigrid import progress_sigrid_data
 from report_generator.generator.data_models.portfolio.portfolio_arguments import portfolio_arguments_command
+from report_generator.generator.data_models.portfolio.sigrid_hygiene_portfolio import sigrid_hygiene_portfolio_data
 
 from functools import reduce
 

@@ -19,7 +19,7 @@ from pptx.chart.data import CategoryChartData
 from pptx.presentation import Presentation
 
 from report_generator.generator import report_utils
-from report_generator.generator.data_models import maintainability_data, modernization_data, objectives_data, progress_sigrid_data
+from report_generator.generator.data_models import maintainability_data, modernization_data, objectives_data, progress_sigrid_data, sigrid_hygiene_portfolio_data
 from report_generator.generator.placeholders import Placeholder
 from report_generator.generator.placeholders.base import PlaceholderDocType
 
@@ -380,6 +380,23 @@ class ObjectivesStatusChartSigridPlaceholder(_AbstractCategoryChartPlaceholder):
     @classmethod
     def series(cls):
         return progress_sigrid_data.get_portfolio_status_series()
+
+    @classmethod
+    def axis_label(cls):
+        return "Percentage of portfolio"
+
+
+class MetadataCompletenessChartPlaceholder(_AbstractCategoryChartPlaceholder):
+    key = "METADATA_COMPLETENESS_CHART"
+
+    @classmethod
+    def labels(cls):
+        return ["Division", "Team", "Supplier", "In production since", "Business criticality", "Lifecycle phase",
+                "Target industry", "Deployment type", "Application type", "Distribution strategy"]
+
+    @classmethod
+    def series(cls):
+        return sigrid_hygiene_portfolio_data.get_portfolio_metadata_completeness()
 
     @classmethod
     def axis_label(cls):
