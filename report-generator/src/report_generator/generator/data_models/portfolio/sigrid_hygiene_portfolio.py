@@ -22,13 +22,13 @@ import numpy as np
 
 class SigridHygienePortfolioData(AbstractPortfolioModel):
     def __init__(self):
-        self.metadata_fields = ["divisionName", "teamNames", "supplierNames", "inProductionSince","businessCriticality", "lifecyclePhase", "targetIndustry",
-                                "deploymentType", "applicationType", "softwareDistributionStrategy"]
+        self.metadata_fields = ["softwareDistributionStrategy", "applicationType", "deploymentType", "targetIndustry",
+                                "lifecyclePhase", "businessCriticality", "inProductionSince", "supplierNames", "teamNames", "divisionName"]
 
     @cached_property
     def get_metadata_fields(self):
-        return ["Division", "Team", "Supplier", "In production since", "Business criticality", "Lifecycle phase",
-                "Target industry", "Deployment type", "Application type", "Distribution strategy"]
+        return ["Distribution strategy", "Application type", "Deployment type", "Target industry", "Lifecycle phase",
+                "Business criticality", "In production since", "Supplier", "Team", "Division"]
 
 
     def _compute_metadata_dataframe(self):

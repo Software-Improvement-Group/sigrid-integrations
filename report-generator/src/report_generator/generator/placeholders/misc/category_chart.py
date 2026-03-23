@@ -391,8 +391,7 @@ class MetadataCompletenessChartPlaceholder(_AbstractCategoryChartPlaceholder):
 
     @classmethod
     def labels(cls):
-        return ["Division", "Team", "Supplier", "In production since", "Business criticality", "Lifecycle phase",
-                "Target industry", "Deployment type", "Application type", "Distribution strategy"]
+        return sigrid_hygiene_portfolio_data.get_metadata_fields
 
     @classmethod
     def series(cls):
