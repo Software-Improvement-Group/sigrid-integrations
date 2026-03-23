@@ -417,3 +417,19 @@ class SnapshotFreshnessChartPlaceholder(_AbstractCategoryChartPlaceholder):
     def axis_label(cls):
         return "Systems"
 
+
+class EolDeactivatedSystemsChartPlaceholder(_AbstractCategoryChartPlaceholder):
+    key = "EOL_DEACTIVATED_CHART"
+
+    @classmethod
+    def labels(cls):
+        return ["Total", "Deactivated", "EOL", "EOL & Deactivated"]
+
+    @classmethod
+    def series(cls):
+        return sigrid_hygiene_portfolio_data.get_eol_deactivated_systems()
+
+    @classmethod
+    def axis_label(cls):
+        return "Systems"
+
