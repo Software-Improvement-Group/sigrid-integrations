@@ -91,5 +91,15 @@ class SigridHygienePortfolioData(AbstractPortfolioModel):
         return [[len(active_systems), days_7, days_30, days_90, days_180, days_more]]
 
 
+    def get_eol_deactivated_systems(self):
+        metadata = {system["systemName"]: system for system in self.metadata}
+        deactivated_systems = [name for name, meta in metadata.items() if not meta["active"] or meta["isDevelopmentOnly"]]
+        eol_systems = [name for name, meta in metadata.items() if meta["lifecyclePhase"] == "EOL"]
+        deactivated_eol = set(deactivated_systems) & set(eol_systems)
+
+        return [[len(metadata), len(deactivated_systems), len(eol_systems), len(deactivated_eol)]]
+
+
+
 sigrid_hygiene_portfolio_data = SigridHygienePortfolioData()
 
