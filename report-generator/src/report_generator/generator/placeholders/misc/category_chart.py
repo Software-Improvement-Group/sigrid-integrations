@@ -38,6 +38,10 @@ class _AbstractCategoryChartPlaceholder(Placeholder, ABC):
         pass
 
     @classmethod
+    def series_names(cls):
+        return []
+
+    @classmethod
     def colors(cls):
         return []
 
@@ -51,6 +55,7 @@ class _AbstractCategoryChartPlaceholder(Placeholder, ABC):
         return {
             "labels"   : cls.labels(),
             "series"   : cls.series(),
+            "seriesNames": cls.series_names(),
             "colors"   : cls.colors(),
             "axisLabel": cls.axis_label(),
         }
@@ -69,8 +74,11 @@ class _AbstractCategoryChartPlaceholder(Placeholder, ABC):
         values = value_cb()
         chart_data = CategoryChartData()
         chart_data.categories = values["labels"]
-        for y in values["series"]:
-            chart_data.add_series(values["axisLabel"], y)
+
+        series_names = values.get("seriesNames", [])
+        for idx, y in enumerate(values["series"]):
+            name = series_names[idx] if idx < len(series_names) else values["axisLabel"]
+            chart_data.add_series(name, y)
 
         colors = values["colors"]
         for chart in charts:
@@ -433,3 +441,22 @@ class EolDeactivatedSystemsChartPlaceholder(_AbstractCategoryChartPlaceholder):
     def axis_label(cls):
         return "Systems"
 
+
+class UsersLastLoginChartPlaceholder(_AbstractCategoryChartPlaceholder):
+    key = "USERS_LAST_LOGIN_CHART"
+
+    @classmethod
+    def labels(cls):
+        return ["Total", "1 week", "1 month", "3 months", "1 year", ">1 year"]
+
+    @classmethod
+    def series(cls):
+        return sigrid_hygiene_portfolio_data.get_last_access_time_users()
+
+    @classmethod
+    def series_names(cls):
+        return ["Admin", "Maintainer", "User"]
+
+    @classmethod
+    def axis_label(cls):
+        return "Users"

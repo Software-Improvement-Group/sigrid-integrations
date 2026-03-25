@@ -100,6 +100,32 @@ class SigridHygienePortfolioData(AbstractPortfolioModel):
         return [[len(metadata), len(deactivated_systems), len(eol_systems), len(deactivated_eol)]]
 
 
+    def get_last_access_time_users(self):
+        users = sigrid_api.get_users()["users"]
+        roles = ["ADMIN", "MAINTAINER", "USER"]
+        time_now = datetime.now()
+
+        # 5 time buckets (7, 30, 90, 365, >365 days) × 3 roles
+        buckets = np.zeros((5, 3), dtype=int)
+
+        for i, role in enumerate(roles):
+            freshness_list = [(time_now - datetime.fromisoformat(user["lastLoginAt"])).days
+                              for user in users
+                              if user["lastLoginAt"] is not None and user["role"] == role]
+
+            for days in freshness_list:
+                if days < 7: buckets[0, i] += 1
+                elif days < 30: buckets[1, i] += 1
+                elif days < 90: buckets[2, i] += 1
+                elif days < 365: buckets[3, i] += 1
+                else: buckets[4, i] += 1
+
+        totals = buckets.sum(axis=0)
+        # result: 3 rows (roles) × 6 columns (total + 5 time buckets)
+        result = np.column_stack((totals, buckets.T))
+
+        return result.tolist()
+
 
 sigrid_hygiene_portfolio_data = SigridHygienePortfolioData()
 
