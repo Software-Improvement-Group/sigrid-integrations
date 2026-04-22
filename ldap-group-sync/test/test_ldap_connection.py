@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ldap
+from ldap3 import SUBTREE
 
 from sigridldap.ldap_connection import LdapConfig, LdapConnection
 
@@ -35,8 +35,13 @@ OPEN_SOURCE_LDAP_CONFIG = LdapConfig(
 
 def testConnectLDAP():
     ldapConnection = LdapConnection(OPEN_SOURCE_LDAP_CONFIG)
-    users = ldapConnection.connection.search_s(OPEN_SOURCE_LDAP_CONFIG.bindDN, ldap.SCOPE_SUBTREE, "objectclass=*")
+    ldapConnection.connection.search(
+        search_base=OPEN_SOURCE_LDAP_CONFIG.bindDN,
+        search_filter="(objectclass=*)",
+        attributes=["cn", "sn"]
+    )
+    users = ldapConnection.connection.entries
 
     assert len(users) == 1
-    assert users[0][1]["cn"][0].decode("utf8") == "read-only-admin"
-    assert users[0][1]["sn"][0].decode("utf8") == "Read Only Admin"
+    assert users[0]["cn"].value == "read-only-admin"
+    assert users[0]["sn"].value == "Read Only Admin"
