@@ -53,13 +53,13 @@ class LdapGroup:
 class LdapConnection:
     def __init__(self, config: LdapConfig):
         self.config = config
-
-        self.url = os.environ["SIGRID_LDAP_URL"]
+        self.url = config.url
 
         tls = None
-        if os.environ.get("LDAP_CA_CERT"):
+        ca_cert = os.environ.get("LDAP_CA_CERT")
+        if ca_cert:
             tls = Tls(
-                ca_certs_file=os.environ["LDAP_CA_CERT"],
+                ca_certs_file=ca_cert,
                 validate=ssl.CERT_REQUIRED
             )
 
