@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ldap
-
 from sigridldap.ldap_connection import LdapConfig, LdapConnection
 from sigridldap.sigrid_user_management import SigridUserManagement
 from sigridldap.sync import syncUserGroups, syncGroupMemberships
