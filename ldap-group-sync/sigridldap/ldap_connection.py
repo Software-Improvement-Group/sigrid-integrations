@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import ldap
 import os
+import ssl
 from dataclasses import dataclass
+
+from ldap3 import ALL, Connection, Server, Tls
+from ldap3.core.exceptions import LDAPException
 
 
 @dataclass
@@ -50,30 +53,60 @@ class LdapGroup:
 class LdapConnection:
     def __init__(self, config: LdapConfig):
         self.config = config
-        self.connection = ldap.initialize(config.url)
+
+        tls = None
         if os.environ.get("LDAP_CA_CERT"):
-            self.connection.set_option(ldap.OPT_X_TLS_CACERTFILE, os.environ["LDAP_CA_CERT"])
-            self.connection.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)
-            self.connection.set_option(ldap.OPT_X_TLS_DEMAND, True)
-            self.connection.conn.start_tls_s()
-        self.connection.simple_bind_s(config.bindDN, config.bindPassword)
+            tls = Tls(
+                ca_certs_file=os.environ["LDAP_CA_CERT"],
+                validate=ssl.CERT_REQUIRED
+            )
+
+        server = Server(config.url, tls=tls, get_info=ALL)
+        self.connection = Connection(server, config.bindDN, config.bindPassword, auto_bind=False)
+
+        try:
+            self.connection.open()
+            if tls:
+                self.connection.start_tls()
+            self.connection.bind()
+        except LDAPException as e:
+            raise RuntimeError(f"Failed to connect to LDAP server at {config.url}: {e}") from e
 
     def listUsers(self) -> list[LdapUser]:
-        objects = self.connection.search_s(self.config.userDN, ldap.SCOPE_SUBTREE, self.config.userQuery)
-        return [self.parseUserObject(object) for object in objects if self.config.userEmailAttr in object[1]]
-
-    def parseUserObject(self, object) -> LdapUser:
-        uid = object[0]
-        email = object[1][self.config.userEmailAttr][0].decode("utf8")
-        firstName = object[1][self.config.userFirstNameAttr][0].decode("utf8")
-        lastName = object[1][self.config.userLastNameAttr][0].decode("utf8")
+        self.connection.search(
+            search_base=self.config.userDN,
+            search_filter=f"({self.config.userQuery})",
+            attributes=[
+                self.config.userFirstNameAttr,
+                self.config.userLastNameAttr,
+                self.config.userEmailAttr
+            ]
+        )
+        return [
+            self.parseUserEntry(entry)
+            for entry in self.connection.entries
+            if entry[self.config.userEmailAttr].value is not None
+        ]
+    
+    def parseUserEntry(self, entry) -> LdapUser:
+        uid = entry.entry_dn
+        email = entry[self.config.userEmailAttr].value
+        firstName = entry[self.config.userFirstNameAttr].value
+        lastName = entry[self.config.userLastNameAttr].value
         return LdapUser(uid, email, firstName, lastName)
 
     def listGroups(self) -> list[LdapGroup]:
-        objects = self.connection.search_s(self.config.groupDN, ldap.SCOPE_SUBTREE, self.config.groupQuery)
-        return [self.parseGroupObject(object) for object in objects]
+        self.connection.search(
+            search_base=self.config.groupDN,
+            search_filter=f"({self.config.groupQuery})",
+            attributes=[
+                self.config.groupNameAttr,
+                self.config.groupMemberAttr
+            ]
+        )
+        return [self.parseGroupEntry(entry) for entry in self.connection.entries]
 
-    def parseGroupObject(self, object) -> LdapGroup:
-        name = object[1][self.config.groupNameAttr][0].decode("utf8")
-        userIds = [member.decode("utf8") for member in object[1][self.config.groupMemberAttr]]
+    def parseGroupEntry(self, entry) -> LdapGroup:
+        name = str(entry[self.config.groupNameAttr])
+        userIds = [str(member) for member in entry[self.config.groupMemberAttr].values]
         return LdapGroup(name, userIds)
