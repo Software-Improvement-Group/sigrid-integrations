@@ -54,6 +54,8 @@ class LdapConnection:
     def __init__(self, config: LdapConfig):
         self.config = config
 
+        self.url = os.environ["SIGRID_LDAP_URL"]
+
         tls = None
         if os.environ.get("LDAP_CA_CERT"):
             tls = Tls(
@@ -61,16 +63,32 @@ class LdapConnection:
                 validate=ssl.CERT_REQUIRED
             )
 
-        server = Server(config.url, tls=tls, get_info=ALL)
-        self.connection = Connection(server, config.bindDN, config.bindPassword, auto_bind=False)
+        self.server = Server(self.url, tls=tls, get_info=ALL)
+
+        self.connection = Connection(
+            self.server,
+            config.bindDN,
+            config.bindPassword,
+            auto_bind=False
+        )
 
         try:
             self.connection.open()
-            if tls:
+
+            if tls and not self.server.ssl:
                 self.connection.start_tls()
+
             self.connection.bind()
+
+            if self.server.ssl:
+                print(f"LDAP connected using LDAPS to {self.server.host}")
+            elif self.connection.tls_started:
+                print(f"LDAP connected using StartTLS to {self.server.host}")
+            else:
+                print(f"LDAP connected without TLS to {self.server.host}")
+
         except LDAPException as e:
-            raise RuntimeError(f"Failed to connect to LDAP server at {config.url}: {e}") from e
+            raise RuntimeError(f"Failed to connect to LDAP server {self.url}: {e}") from e
 
     def listUsers(self) -> list[LdapUser]:
         self.connection.search(
@@ -87,7 +105,7 @@ class LdapConnection:
             for entry in self.connection.entries
             if entry[self.config.userEmailAttr].value is not None
         ]
-    
+
     def parseUserEntry(self, entry) -> LdapUser:
         uid = entry.entry_dn
         email = entry[self.config.userEmailAttr].value
