@@ -14,7 +14,7 @@ is used for interaction between these scripts and Sigrid.
 - Install the dependencies: `pip3 install -r requirements.txt --user`
 - You need a [Sigrid API token](https://docs.sigrid-says.com/organization-integration/authentication-tokens.html)
   - This token needs to have administrator rights (since user management requires administrator rights)
-  - Your Sigrid API token needs to be available to the script via the `SIGRID_CI_TOKEN` environment variable
+  - Your Sigrid API token (also known as `SIGRID_CI_TOKEN` in other Sigrid integrations) needs to be available to the script via the `SIGRID_UM_TOKEN` environment variable
 
 ## Usage
 
