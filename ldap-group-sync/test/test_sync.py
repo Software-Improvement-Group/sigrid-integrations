@@ -77,7 +77,8 @@ def testDeleteObsoleteGroups():
         "list groups",
         "create group Italians",
         "create group Chemists",
-        "delete group Belgians"
+        "update group 3 to []",
+        "delete group 3"
     ]
 
 
