@@ -27,8 +27,9 @@ def syncUserGroups(sigrid: SigridUserManagement, ldapConnection: LdapConnection)
         sigridGroups[group.name] = sigrid.createUserGroup(group.name)
 
     for group in findOrphanGroups(ldapGroups, sigridGroups):
+        sigrid.updateGroupMembers(sigridGroups[group]["id"], [])
         print(f"Removing Sigrid user group '{group}'")
-        sigrid.deleteUserGroup(group)
+        sigrid.deleteUserGroup(sigridGroups[group]["id"])
 
 
 def syncGroupMemberships(sigrid: SigridUserManagement, ldapConnection: LdapConnection) -> None:
