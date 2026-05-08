@@ -1,9 +1,10 @@
 # Sigrid LDAP group synchronization
 
-Synchronizes group memberships from LDAP groups to Sigrid user groups.
+Synchronizes group memberships from LDAP groups to Sigrid user groups. Optionally, it can also create and delete
+Sigrid groups to match LDAP, and remove Sigrid users that are no longer present in LDAP.
 
 Groups are assumed to be connected if the LDAP group and Sigrid user group have the same name. The group memberships
-for each Sigrid user group are then updated, based on the users in the corresponding LDAP group. 
+for each Sigrid user group are then updated, based on the users in the corresponding LDAP group.
 
 The [Sigrid user management API](https://docs.sigrid-says.com/integrations/sigrid-api-documentation.html#user-management)
 is used for interaction between these scripts and Sigrid.
@@ -28,7 +29,7 @@ Configuration is done using environment variables:
 | `SIGRID_LDAP_URL`                  | ldap://ldap.example.com:389          | LDAP URL.                                                         |
 | `SIGRID_LDAP_BIND_DN`              | cn=read-only-admin,dc=example,dc=com | LDAP DN used for authenticating this integration.                 |
 | `SIGRID_LDAP_BIND_PASSWORD`        | (password)                           | LDAP password used for authenticating this integration.           |
-| `SIGRID_LDAP_USER_DN`              | dc=example,dc=com                    | Locations of users to sync.                                       |
+| `SIGRID_LDAP_USER_DN`              | dc=example,dc=com                    | Location of users to sync.                                        |
 | `SIGRID_LDAP_USER_QUERY`           | objectclass=inetOrgPerson            | Query on user DN to get the list of user objects.                 |
 | `SIGRID_LDAP_USER_FIRST_NAME_ATTR` | cn                                   | Name of the LDAP attribute used for users' first names.           |
 | `SIGRID_LDAP_USER_LAST_NAME_ATTR`  | cn                                   | Name of the LDAP attribute used for users' last names.            |
@@ -41,9 +42,20 @@ Configuration is done using environment variables:
 | `LDAP_CA_CERT`                     | myldapcert.pem                       | (Optional) Path to `.pem` file for connecting to LDAP.            |
 
 
+The script also accepts the following optional flags:
+
+| Flag               | Description                                                                                         |
+|--------------------|-----------------------------------------------------------------------------------------------------|
+| `--override-groups` | Creates and deletes Sigrid user groups to match the groups found in LDAP.                          |
+| `--remove-users`    | Removes Sigrid users whose email address is not found in the LDAP user query results.              |
+
 Once all environment variables are in place, you can run the integration:
 
     ./sigrid_ldap_group_sync.py
+
+You can optionally pass one or both flags:
+
+    ./sigrid_ldap_group_sync.py --override-groups --remove-users
 
 You would typically run this as a scheduled job, to periodically perform this synchronization. However, it's also 
 possible to run this manually or ad-hoc.
