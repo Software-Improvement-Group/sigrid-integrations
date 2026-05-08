@@ -14,7 +14,7 @@
 
 from sigridldap.ldap_connection import LdapConfig, LdapConnection
 from sigridldap.sigrid_user_management import SigridUserManagement
-from sigridldap.sync import syncUserGroups, syncGroupMemberships
+from sigridldap.sync import syncUserGroups, syncGroupMemberships, removeUsers
 
 
 OPEN_SOURCE_LDAP_CONFIG = LdapConfig(
@@ -112,6 +112,28 @@ def testAutoCreateMissingSigridUsers():
     ]
 
 
+def testRemoveUsersNotInLdap():
+    sigrid = MockSigridUserManagement()
+    sigrid.existingUsers.append({"id": "1", "email": "tesla@ldap.forumsys.com"})
+    sigrid.existingUsers.append({"id": "2", "email": "notinldap@example.com"})
+
+    removeUsers(sigrid, ldapConnection)
+
+    assert sigrid.actions == [
+        "delete user 2"
+    ]
+
+
+def testRemoveUsersDoesNothingWhenAllPresent():
+    sigrid = MockSigridUserManagement()
+    sigrid.existingUsers.append({"id": "1", "email": "tesla@ldap.forumsys.com"})
+    sigrid.existingUsers.append({"id": "2", "email": "newton@ldap.forumsys.com"})
+
+    removeUsers(sigrid, ldapConnection)
+
+    assert sigrid.actions == []
+
+
 class MockSigridUserManagement(SigridUserManagement):
     def __init__(self):
         super().__init__("https://dummy", "example", "token")
@@ -144,6 +166,10 @@ class MockSigridUserManagement(SigridUserManagement):
 
     def listUsers(self):
         return self.existingUsers
+
+    def deleteUser(self, userId: str):
+        self.actions.append(f"delete user {userId}")
+        self.existingUsers = [user for user in self.existingUsers if user["id"] != userId]
 
     def createUser(self, email: str, firstName: str, lastName: str):
         self.actions.append(f"create user {email}")
