@@ -20,7 +20,7 @@ from argparse import ArgumentParser
 
 from sigridldap.ldap_connection import LdapConfig, LdapConnection
 from sigridldap.sigrid_user_management import SigridUserManagement
-from sigridldap.sync import syncUserGroups, syncGroupMemberships
+from sigridldap.sync import syncUserGroups, syncGroupMemberships, removeUsers
 
 
 def getRequiredEnv(name: str) -> str:
@@ -33,6 +33,7 @@ def getRequiredEnv(name: str) -> str:
 if __name__ == "__main__":
     parser = ArgumentParser(description="Synchronizes group memberships from LDAP groups to Sigrid user groups.")
     parser.add_argument("--override-groups", action="store_true", help="Force-replace all user groups with LDAP groups.")
+    parser.add_argument("--remove-users", action="store_true", help="Remove Sigrid users not found in the LDAP user query.")
     args = parser.parse_args()
 
     sigridURL = os.environ.get("SIGRID_UM_URL", "https://sigrid-says.com")
@@ -58,4 +59,6 @@ if __name__ == "__main__":
 
     if args.override_groups:
         syncUserGroups(sigrid, ldapConnection)
+    if args.remove_users:
+        removeUsers(sigrid, ldapConnection)
     syncGroupMemberships(sigrid, ldapConnection)
