@@ -77,3 +77,6 @@ class SigridUserManagement:
             },
             "isSSO": True
         })
+
+    def deleteUser(self, userId: str):
+        return self.callEndPoint("DELETE", f"/rest/auth/api/user-management/{self.customer}/users/{userId}")

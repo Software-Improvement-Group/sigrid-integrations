@@ -62,6 +62,16 @@ def findOrphanGroups(ldapGroups: list[LdapGroup], sigridGroups: dict) -> list[st
     return [groupName for groupName in sigridGroups if groupName not in ldapGroupNames]
 
 
+def removeUsers(sigrid: SigridUserManagement, ldapConnection: LdapConnection) -> None:
+    ldapUserEmails = {user.email for user in ldapConnection.listUsers()}
+    sigridUsers = sigrid.listUsers()
+
+    for sigridUser in sigridUsers:
+        if sigridUser["email"] not in ldapUserEmails:
+            print(f"Removing Sigrid user '{sigridUser['email']}' (not found in LDAP)")
+            sigrid.deleteUser(sigridUser["id"])
+
+
 def findLdapUsers(group: LdapGroup, users: list[LdapUser]) -> Iterator[LdapUser]:
     uids = {user.uid: user for user in users}
 
