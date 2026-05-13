@@ -10,16 +10,17 @@ COPY osh-findings/ /integrations/osh-findings
 COPY polarion-integration/ /integrations/polarion-integration
 RUN apk add --no-cache \
         build-base \
-        git \
         graphviz \
         openldap-dev \
         python3-dev \
     && adduser -S sigrid \
-    && pip install --no-cache-dir --upgrade pip setuptools wheel \
     && pip install --no-cache-dir -r /integrations/objectives-report/requirements.txt \
-    && pip install --no-cache-dir -r /integrations/osh-findings/requirements.txt \
-    && pip install --no-cache-dir -r /integrations/export-portfolio-dependencies/requirements.txt \
-    && pip install --no-cache-dir -r /integrations/ldap-group-sync/requirements.txt
+     -r /integrations/osh-findings/requirements.txt \
+     -r /integrations/export-portfolio-dependencies/requirements.txt \
+     -r /integrations/ldap-group-sync/requirements.txt \
+    && apk del build-base \
+               openldap-dev \
+               python3-dev
 
 ENV PATH="/integrations/objectives-report:/integrations/get-scope-file:/integrations/export-portfolio-dependencies:/integrations/polarion-integration:/integrations/issue-tracker-export:/integrations/excel-exports:/integrations/osh-findings:${PATH}"
 USER sigrid

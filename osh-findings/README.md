@@ -23,7 +23,9 @@ You will need the following to use this script:
 
 Once all prerequisites are in place, you can use the script.
 
-    ./osh-findings.py --customer <mycustomername> --system <mysystemname> 
+    ./osh-findings.py --customer <mycustomername> --system <mysystemname> [--defaultObjective [HIGH|MEDIUM|LOW|NONE]]
+
+The objectives set (at system or portfolio level) take precedence over the defaultObjective argument. The default value is HIGH.
 
 ## Exit codes
 

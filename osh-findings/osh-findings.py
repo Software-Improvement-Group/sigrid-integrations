@@ -103,6 +103,8 @@ class SigridApiClient:
             body = response.read().decode('utf-8')
             LOG.info('Sigrid returned JSON (length: %s chars)', len(body))
             return body
+        elif response.status == 204:
+            return "{}"
         else:
             LOG.error('Sigrid returned status code %s', response.status)
             return None
@@ -249,6 +251,7 @@ if __name__ == "__main__":
     parser.add_argument("--customer", type=str, help="Sigrid customer name.")
     parser.add_argument("--system", type=str, help="Sigrid system name.")
     parser.add_argument("--sigridurl", type=str, default="https://sigrid-says.com")
+    parser.add_argument("--defaultObjective", type=str, choices=["NONE", "LOW", "MEDIUM", "HIGH"], default="HIGH")
     args = parser.parse_args()
 
     if not os.environ.get(SIGRID_CI_TOKEN_ENV_NAME):
@@ -260,9 +263,9 @@ if __name__ == "__main__":
     osh_results = sigrid.get_osh_results()
 
     exit_code = 0
-    exit_code += get_vulnerability_risks(osh_results, objectives.get(VULNERABILITY_FINDING_TYPE.objective_name))
-    exit_code += get_updates(osh_results.get('components'), objectives.get(FRESHNESS_FINDING_TYPE.objective_name))
-    exit_code += get_legal_risks(osh_results.get('components'), objectives.get(LEGAL_FINDING_TYPE.objective_name))
+    exit_code += get_vulnerability_risks(osh_results, objectives.get(VULNERABILITY_FINDING_TYPE.objective_name, args.defaultObjective))
+    exit_code += get_updates(osh_results.get('components'), objectives.get(FRESHNESS_FINDING_TYPE.objective_name, args.defaultObjective))
+    exit_code += get_legal_risks(osh_results.get('components'), objectives.get(LEGAL_FINDING_TYPE.objective_name, args.defaultObjective))
 
     if exit_code:
         print(get_warning_text("Risks exceeding your objectives have been found"))
