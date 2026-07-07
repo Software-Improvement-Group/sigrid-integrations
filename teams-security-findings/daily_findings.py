@@ -53,7 +53,7 @@ class SigridApiClient:
             with request.urlopen(req) as response:
                 return json.loads(self.handle_response(response))
         except URLError as e:
-           LOG.exception('Unable to connect to Sigrid API')
+            LOG.exception('Unable to connect to Sigrid API')
             return None
         except RemoteDisconnected:
             LOG.error('Sigrid disconnected or timed out')
