@@ -1,50 +1,56 @@
-# Export portfolio dependencies to Excel
+# Scripts for exporting portfolio dependencies from Sigrid's Open Source Health
 
-## Intro
+Contains scripts to export data from Sigrid's Open Source Health across your entire portfolio into various formats.
+These scripts use the Sigrid REST API, but add some command line options and behavior that make it easier to export
+and filter the data into formats suitable for different use cases.
 
-The export portfolio dependencies to Excel is a tiny Python script to export all third party open source (OSH) dependencies measured from a Sigrid portfolio in a single self-contained document.  
-Each sheet in the output Excel file will contain a systems' dependencies.
+## Prerequisites
 
-## Status
+You will need the following to use this script:
 
-This tool is currently in the proof-of-concept phase. Things may not completely work yet, or break at a given time. Usage is at your own risk. Please contact the team working on the tool if you have an urgent need, but that there is no official support at this moment.
+- These scripts require Python 3.11 or newer.
+- Install the dependencies (e.g. `pip3 install -r requirements.txt --user`).
+- You will need a valid [API token](https://docs.sigrid-says.com/organization-integration/authentication-tokens.html)
+  to access the [Sigrid REST API](https://docs.sigrid-says.com/integrations/sigrid-api-documentation.html).
+- Your API token should be available to the script as the environment variable `SIGRID_CI_TOKEN`.
 
-## Installation
+## Export portfolio dependencies to Excel
 
-1. Clone this repository and `cd` into it.
-2. Install the dependencies: `pip3 install -r export-portfolio-dependencies/requirements.txt`
+The export portfolio dependencies to Excel is a tiny Python script to export all third party open source (OSH)
+dependencies measured from a Sigrid portfolio in a single self-contained document. Each sheet in the output Excel
+file will contain a systems' dependencies.
 
-## Usage
-
-### Create customer-specific access token
-
-Before using the system, you need to generate a Sigrid token. Tokens are unique **per customer**. Create a new token for a new customer:
-
-1. Go to Sigrid: `https://sigrid-says.com/<your-customer>`
-2. Go to user settings, via the person icon on the top right
-3. Click "create new token" and create a token with a descriptive name, e.g. `customername-export-portfolio-dependencies`.
-4. Save the token somewhere so you don't need to recreate it every time. (Tokens are valid for 1 year)
-5. Export the token in your path under the `SIGRID_CI_TOKEN` value. Most likely, something along the lines of `export SIGRID_CI_TOKEN=<token>` 
-
-### Run the tool
-
-* Run: `export_portfolio_dependencies.py [-h] --customer CUSTOMER [--output OUTPUT] [--pivot] [--mendix_versions_only] [--debug]`  
+    ./export_portfolio_dependencies.py [-h] --customer CUSTOMER [--output OUTPUT] [--pivot] [--mendix_versions_only] [--debug]  
 
 The script creates a sheet per system and saves it into a single Excel file. Using `--pivot`, it creates
 a single sheet where all dependencies are pivoted, with an additional column containing a comma-separated list of systems where 
 that single dependency is measured. 
 
-If all goes well, the export should be in the folder where you run the command. Optionally, in the specified filename when passing the `--output` parameter.  
+If all goes well, the export should be in the folder where you run the command. Optionally, in the specified 
+filename when passing the `--output` parameter.  
 
-The `--mendix_versions_only` field is an optional field for users using Mendix QSM. Using this field retrieves all the different Mendix-Runtime versions used for each system and writes it to the output file. 
+The `--mendix_versions_only` field is an optional field for users using Mendix QSM. Using this field retrieves all 
+the different Mendix-Runtime versions used for each system and writes it to the output file. 
 
-#### Troubleshooting
+If there is an error, and you can't figure out what causes it, run the tool again with the `--debug` parameter
+appended to gather additional information. Then, open an issue on this repository.
 
-If there is an error and you can't figure out what causes it, run the tool again with the `--debug` parameter appended to gather additional information. Then, open an issue on this repository.
+## Export portfolio dependencies to SBOM
 
-## Suggestions / feedback
+The Sigrid REST API allows you to export all dependencies across your portfolio into one giant SBOM. However, in
+some cases you might want to export *multiple* systems into one large SBOM, but not *all* systems. This script helps
+you to filter the output based on your selection criteria.
 
-Feedback is welcome! If you have ideas to improve this export, please reach out to Software Improvement Group, or open a pull request to this repository.
+    ./export_portfolio_sbom.py --customer yourcompany [--team Aap] [--division Something] --out my-sbom.json
+
+If you add the `--team` and/or `--division` arguments, the list of systems will be filtered accordingly. You can use
+a comma-separated list if you want to filter on multiple divisions or teams. If you add *neither* option, you will 
+just get the entire portfolio. The resulting SBOM in CycloneDX format is saved to the file in `--out`.
+
+## Suggestions and feedback
+
+Feedback is welcome! If you have ideas to improve this export, please reach out to Software Improvement Group, or 
+open a pull request to this repository.
 
 ## License
 
