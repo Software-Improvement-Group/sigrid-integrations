@@ -20,7 +20,7 @@ The export portfolio dependencies to Excel is a tiny Python script to export all
 dependencies measured from a Sigrid portfolio in a single self-contained document. Each sheet in the output Excel
 file will contain a systems' dependencies.
 
-    ./export_portfolio_dependencies.py [-h] --customer CUSTOMER [--output OUTPUT] [--pivot] [--mendix_versions_only] [--debug]  
+    python3 export_portfolio_dependencies.py [-h] --customer CUSTOMER [--output OUTPUT] [--pivot] [--mendix_versions_only] [--debug]  
 
 The script creates a sheet per system and saves it into a single Excel file. Using `--pivot`, it creates
 a single sheet where all dependencies are pivoted, with an additional column containing a comma-separated list of systems where 
@@ -41,7 +41,7 @@ The Sigrid REST API allows you to export all dependencies across your portfolio 
 some cases you might want to export *multiple* systems into one large SBOM, but not *all* systems. This script helps
 you to filter the output based on your selection criteria.
 
-    ./export_portfolio_sbom.py --customer yourcompany [--team Aap] [--division Something] --out my-sbom.json
+    python3 export_portfolio_sbom.py --customer yourcompany [--team Aap] [--division Something] --out my-sbom.json
 
 If you add the `--team` and/or `--division` arguments, the list of systems will be filtered accordingly. You can use
 a comma-separated list if you want to filter on multiple divisions or teams. If you add *neither* option, you will 

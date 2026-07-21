@@ -21,10 +21,10 @@ import urllib.request
 from argparse import ArgumentParser
 
 
-def fetch(path):
+def fetch(path, token):
     request = urllib.request.Request(f"{args.sigridurl}/rest/analysis-results/api/v1{path}")
     request.add_header("Accept", "application/json")
-    request.add_header("Authorization", f"Bearer {os.environ['SIGRID_CI_TOKEN']}".encode("utf8"))
+    request.add_header("Authorization", f"Bearer {token}".encode("utf8"))
     with urllib.request.urlopen(request) as response:
         return json.load(response)
 
@@ -54,12 +54,18 @@ if __name__ == "__main__":
     parser.add_argument("--sigridurl", type=str, default="https://sigrid-says.com", help="Sigrid base URL.")
     args = parser.parse_args()
 
-    if not os.environ.get("SIGRID_CI_TOKEN"):
-        print("Missing Sigrid API token in environment variable SIGRID_CI_TOKEN")
+    token = os.environ.get("SIGRID_CI_TOKEN") or os.environ.get("SIGRID_TOKEN")
+
+    if token is None:
+        print("Missing Sigrid API token in environment variable SIGRID_CI_TOKEN or SIGRID_TOKEN")
         sys.exit(1)
 
-    sbom = fetch(f"/osh-findings/{args.customer}")
-    metadata = fetch(f"/system-metadata/{args.customer}")
+    if not args.out.endswith((".json", ".sbom")):
+        print(f"Invalid output file name, only .json and .sbom are supported: {args.out}")
+        sys.exit(1)
+
+    sbom = fetch(f"/osh-findings/{args.customer}", token)
+    metadata = fetch(f"/system-metadata/{args.customer}", token)
 
     sbom["systems"] = [system for system in sbom["systems"] if filterSystem(system["sbom"], metadata)]
 
