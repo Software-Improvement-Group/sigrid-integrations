@@ -1,18 +1,18 @@
 from enum import Enum
 from functools import singledispatch
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 from openpyxl.reader.excel import load_workbook
 from openpyxl import Workbook
 
 
 @singledispatch
-def parseType(inp):
+def parse_type(inp):
     return inp
 
 
-@parseType.register
-def parseTypeStr(inp: list):
+@parse_type.register
+def _parse_type_list(inp: list):
     if len(inp) == 0:
         return "[]"
     else:
@@ -43,7 +43,7 @@ def _checkbool(input) -> bool:
     raise TypeError(f'Unsupported type provided, input was {input}')
 
 
-def _checkint(input: str) -> int:
+def _checkint(input: str) -> Optional[int]:
     out = None
     if not isinstance(input, int):
         try:
@@ -67,19 +67,29 @@ def _checkArr(input: str) -> List[str]:
         raise ValueError(f'Unsupported type, got {input} of type {type(input)}')
 
 
+_TYPE_VALIDATORS = {
+    ExcelTypes.BOOL: _checkbool,
+    ExcelTypes.STRING_ARRAY: _checkArr,
+    ExcelTypes.INT: _checkint,
+    ExcelTypes.STRING: lambda x: x,
+}
+
+
+def coerce_value(value: Any, excel_type: ExcelTypes) -> Any:
+    """Coerce a single spreadsheet value to the Python type indicated by excel_type."""
+    return _TYPE_VALIDATORS[excel_type](value)
+
+
 # Reads from an already-zipped row and applies a type mapping.  Then returns as a Dict
 def read_row_as_type(row_dict: Dict[str, str], type_mapping: Dict[str, ExcelTypes]) -> Dict[str, Any]:
     out_dict = {}
-
-    type_validators = {ExcelTypes.BOOL: _checkbool, ExcelTypes.STRING_ARRAY: _checkArr, ExcelTypes.INT: _checkint,
-                     ExcelTypes.STRING: lambda x: x}
 
     for key, excel_type in type_mapping.items():
         if key not in row_dict:
             print(f"warning: missing key {key}")
             continue
         try:
-            out_dict[key] = type_validators[excel_type](row_dict[key])
+            out_dict[key] = coerce_value(row_dict[key], excel_type)
         except KeyError:
             print(f'Did not find type {excel_type} in type lookup table.')
             out_dict[key] = row_dict[key]
@@ -104,11 +114,11 @@ def load_from_excel_as_type(xlsx_file, type_mapping: Dict[str, ExcelTypes]) -> L
     header_row, rows = set_up_worksheet(xlsx_file)
     return read_rows_as_type(header_row, rows, type_mapping)
 
+
 def create_template_from_array(header_row: List[str], output_file: str):
     wb = Workbook()
     mainsheet = wb.active
-    mainsheet.title = f'system_data'
+    mainsheet.title = 'system_data'
     mainsheet.append(header_row)
     wb.save(output_file)
     wb.close()
-

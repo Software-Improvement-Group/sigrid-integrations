@@ -1,8 +1,6 @@
 import click
 
-from SigridSystemMetadata.SigridCustomer import SigridCustomer
-
-
+from SigridSystemMetadata.SigridCustomer import SigridCustomer, MendixOnboardingOptions
 
 
 @click.command()
@@ -16,4 +14,5 @@ from SigridSystemMetadata.SigridCustomer import SigridCustomer
 @click.option('-o', '--output_file', help='Optional output Excel sheet containing returned data (e.g., Sigrid system name)', required=False)
 def onboard_mendix_systems(customer, input_file, token, pat, email, dry_run, output_file, url):
     cust = SigridCustomer(customer=customer, token=token, base_url=url)
-    cust.onboard_mendix_from_excel(input_file, pat=pat, username=email, dry_run=dry_run, output_file=output_file)
+    options = MendixOnboardingOptions(pat=pat, username=email, dry_run=dry_run, output_file=output_file)
+    cust.onboard_mendix_from_excel(input_file, options)

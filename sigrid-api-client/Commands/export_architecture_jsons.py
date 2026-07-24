@@ -1,5 +1,4 @@
 import os
-import sys
 
 import click
 
@@ -16,13 +15,11 @@ def export_architecture_jsons(customer, out_directory, token, system, out_file, 
     cust = SigridCustomer(customer=customer, token=token, base_url=url)
     if system is not None:
         if out_file is None:
-            print('--out_file must be defined to retrieve a single system\'s JSON')
-            sys.exit(1)
+            raise click.UsageError("--out_file must be defined to retrieve a single system's JSON")
         cust.write_architecture_JSON(system, out_file)
     else:
         if out_directory is None:
-            print('--out_directory must be defined to retrieve all JSONs for a portfolio')
-            sys.exit(1)
+            raise click.UsageError('--out_directory must be defined to retrieve all JSONs for a portfolio')
         if not os.path.exists(out_directory):
             os.makedirs(out_directory)
         cust.write_all_architecture_JSONs(out_directory)

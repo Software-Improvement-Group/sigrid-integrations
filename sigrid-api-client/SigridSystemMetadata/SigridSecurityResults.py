@@ -2,10 +2,10 @@ import json
 from json import JSONDecodeError
 from typing import List, Any, Dict
 
-from openpyxl.worksheet import worksheet
+from openpyxl.worksheet.worksheet import Worksheet
 
 from SigridRest.SigridGetSecurityResultsCommand import SigridGetSecurityResultsCommand
-from Utils.ExcelUtils import parseType
+from Utils.ExcelUtils import parse_type
 
 
 class SigridSecurityResults:
@@ -73,13 +73,12 @@ class SigridSecurityResults:
         return self.data
 
     def get_array_of_fields(self) -> List[Any]:
-        return [[parseType(finding[name]) for name in self.field_order] for finding in self.get_data()]
+        return [[parse_type(finding[name]) for name in self.field_order] for finding in self.get_data()]
 
     @staticmethod
-    def write_header(ws: worksheet):
-
+    def write_header(ws: Worksheet):
         ws.append(SigridSecurityResults.field_order + ['systemName'])
 
-    def write_metadata_to_worksheet(self, ws: worksheet):
+    def write_metadata_to_worksheet(self, ws: Worksheet):
         for row in self.get_array_of_fields():
             ws.append(row + [self.system.name])
