@@ -1,13 +1,12 @@
 import json
-from functools import singledispatchmethod
 from typing import Dict, List, Union, Optional
 
-from openpyxl.worksheet import worksheet
+from openpyxl.worksheet.worksheet import Worksheet
 
 from SigridSystemMetadata.Users.SigridGetUserCommand import SigridGetUserCommand
 from SigridSystemMetadata.Users.SigridUpdateUserCommand import SigridUpdateUserCommand
 from Utils.DictUtils import diff_dicts
-from Utils.ExcelUtils import parseType, ExcelTypes, load_from_excel_as_type
+from Utils.ExcelUtils import parse_type, ExcelTypes, load_from_excel_as_type
 
 
 class SigridUser:
@@ -81,11 +80,11 @@ class SigridUser:
     @classmethod
     def from_sigrid(cls, customer: str, token: str, user_id: str,
                     base_url=None) -> Optional['SigridUser']:
-        dict = json.loads(SigridGetUserCommand(customer, token, user_id, base_url=base_url).do_request())
-        if dict is None:
+        user_data = json.loads(SigridGetUserCommand(customer, token, user_id, base_url=base_url).do_request())
+        if user_data is None:
             print(f'User {user_id} not found in Sigrid for {customer}')
             return None
-        return cls.from_dict(dict)
+        return cls.from_dict(user_data)
 
     def to_dict(self):
         return {
@@ -101,10 +100,10 @@ class SigridUser:
             self.LAST_LOGIN_AT: self.last_login_at
         }
 
-    def write_to_excel(self, ws: worksheet):
+    def write_to_excel(self, ws: Worksheet):
         field_arr = [self.id, self.first_name, self.last_name, self.email, self.is_admin, self.access_to_all,
                      self.systems, self.last_login_at]
-        ws.append([parseType(x) for x in field_arr])
+        ws.append([parse_type(x) for x in field_arr])
 
     def _get_diff_dict(self, other: 'SigridUser'):
         def filter_dict(in_dict: dict):

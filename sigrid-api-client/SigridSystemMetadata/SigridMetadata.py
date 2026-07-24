@@ -3,13 +3,55 @@ import json
 from typing import List, Any, Dict, Optional
 from datetime import date
 
-from openpyxl import worksheet
+from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from SigridRest.SigridGetMetadataCommand import SigridGetMetadataCommand
 from Utils.DictUtils import diff_dicts
-from Utils.ExcelUtils import parseType
+from Utils.ExcelUtils import parse_type, ExcelTypes, coerce_value
+
+
+def _string_list_from_array(arr: List[str]) -> str:
+    out = ['"']
+    for x in arr:
+        out.append(x)
+        out.append(',')
+    out[-1] = '"'
+    return "".join(out)
+
+
+class _MetadataValidatorWriter:
+    """Adds openpyxl data validations to a metadata worksheet. Holds the worksheet and row
+    count as state so the individual add-* helpers keep small interfaces."""
+
+    def __init__(self, ws: Worksheet, num_systems: int):
+        self.ws = ws
+        self.num_systems = num_systems
+
+    def _add(self, dv: DataValidation, field_name: str):
+        index = get_column_letter(SigridMetadata.field_order.index(field_name) + 1)
+        self.ws.add_data_validation(dv)
+        dv.add(f'{index}2:{index}{self.num_systems}')
+
+    def str_len(self, field_names: List[str], max_len: int):
+        for name in field_names:
+            dv = DataValidation(type="textLength", operator="lessThanOrEqual", formula1=max_len,
+                                allow_blank=True, errorStyle='stop', showErrorMessage=True)
+            self._add(dv, name)
+
+    def choices(self, fields: Dict):
+        for name, valid_values in fields.items():
+            dv = DataValidation(type="list", formula1=_string_list_from_array(valid_values),
+                                allow_blank=True, showDropDown=False, errorStyle='stop', showErrorMessage=True)
+            self._add(dv, name)
+
+    def whole_number(self, field_names: List[str], lower: int, upper: int):
+        for name in field_names:
+            dv = DataValidation(type="whole", operator="between", formula1=lower, formula2=upper,
+                                allow_blank=True, errorStyle='stop', showErrorMessage=True)
+            self._add(dv, name)
+
 
 class SigridMetadata:
     systemName = 'systemName'
@@ -55,6 +97,13 @@ class SigridMetadata:
                      softwareDistributionStrategy: ["NOT_DISTRIBUTED", "NETWORK_SERVICE", "DISTRIBUTED"],
                      isDevelopmentOnly: ["FALSE", "TRUE"]}
 
+    # Fields that need type coercion when read from a spreadsheet; everything else stays a string.
+    coercion_types = {inProductionSince: ExcelTypes.INT,
+                      supplierNames: ExcelTypes.STRING_ARRAY,
+                      teamNames: ExcelTypes.STRING_ARRAY,
+                      isDevelopmentOnly: ExcelTypes.BOOL,
+                      scopeFileInRepository: ExcelTypes.BOOL}
+
     def __init__(self, system, data=None):
         self.system = system
         self.data: Optional[dict] = None
@@ -76,40 +125,11 @@ class SigridMetadata:
         # first strip out everything we don't recognize as a valid metadata field.
         metadata = {k: v for (k, v) in metadata.items() if k in SigridMetadata.field_order}
 
-        def checkbool(title):
-            if title in metadata:
-                if isinstance(metadata[title], str):
-                    metadata[title] = metadata[title].upper() == "TRUE"
-
-        def checkint(title):
-            if title in metadata:
-                if not isinstance(metadata[title], int):
-                    try:
-                        metadata[title] = int(metadata[title])
-                    except (ValueError, TypeError):
-                        # in this case there was probably an empty line
-                        metadata[title] = None
-
-        def checkArr(title):
-            if title in metadata:
-                if isinstance(metadata[title], str):
-                    if metadata[title] == '[]' or metadata[title] == '':
-                        metadata[title] = []
-                    else:
-                        metadata[title] = [x.strip() for x in metadata[title].replace("[", '').replace("]", "")
-                        .replace('\'', '').replace("\"", '').split(',')]
-
-        supplierNames = 'supplierNames'
-        inprodsince = 'inProductionSince'
-        isDevOnly = 'isDevelopmentOnly'
-        scopeInRepo = 'scopeFileInRepository'
-        teamNames = 'teamNames'
-
-        checkint(inprodsince)
-        checkArr(supplierNames)
-        checkArr(teamNames)
-        checkbool(isDevOnly)
-        checkbool(scopeInRepo)
+        # coerce the fields that are not plain strings to their expected Python types.
+        # empty cells (None) are left as-is.
+        for field, excel_type in SigridMetadata.coercion_types.items():
+            if metadata.get(field) is not None:
+                metadata[field] = coerce_value(metadata[field], excel_type)
 
         self.data = metadata
 
@@ -148,56 +168,24 @@ class SigridMetadata:
         return diff
 
     def get_array_of_fields(self) -> List[Any]:
-        def parseTypeAndCheck(name):
+        def parse_type_and_check(name):
             if name not in self.get_data():
                 print(f'Warning: {name} not found in metadata response.')
-            return parseType(self.get_data().get(name))
+            return parse_type(self.get_data().get(name))
 
-        return [parseTypeAndCheck(name) for name in self.field_order]
+        return [parse_type_and_check(name) for name in self.field_order]
 
     @staticmethod
-    def write_metadata_header(ws: worksheet):
+    def write_metadata_header(ws: Worksheet):
         ws.append(SigridMetadata.field_order)
 
-    def write_metadata_to_worksheet(self, ws: worksheet):
+    def write_metadata_to_worksheet(self, ws: Worksheet):
         ws.append(self.get_array_of_fields())
 
     @staticmethod
-    def write_data_validators(ws: worksheet, num_systems=5000):
-        def string_list_from_array(arr: List[str]) -> str:
-            out = ['"']
-            for x in arr:
-                out.append(x)
-                out.append(',')
-            out[-1] = '"'
-            return "".join(out)
-
-        def write_validator(dv: DataValidation, field_name: str):
-            index = get_column_letter(SigridMetadata.field_order.index(field_name) + 1)
-            ws.add_data_validation(dv)
-            dv.add(f'{index}2:{index}{num_systems}')
-
-        def write_str_len_validator(field_names: List[str], max_len: int):
-            for name in field_names:
-                dv = DataValidation(type="textLength", operator="lessThanOrEqual", formula1=max_len,
-                                    allow_blank=True, errorStyle='stop', showErrorMessage=True)
-                write_validator(dv, name)
-
-        def write_list_validator(fields: Dict):
-            for name, valid_values in fields.items():
-                dv = DataValidation(type="list", formula1=string_list_from_array(valid_values),
-                                    allow_blank=True, showDropDown=False, errorStyle='stop', showErrorMessage=True)
-                write_validator(dv, name)
-
-        def write_number_validator(field_names: List[str], lower: int, upper: int, whole: bool = True):
-            for name in field_names:
-                dv = DataValidation(type="whole" if whole else "decimal", operator="between",
-                                    formula1=lower, formula2=upper, allow_blank=True, errorStyle='stop',
-                                    showErrorMessage=True)
-                write_validator(dv, name)
-
-        write_list_validator(SigridMetadata.valid_entries)
-        write_str_len_validator([SigridMetadata.displayName, SigridMetadata.divisionName,
-                                 SigridMetadata.externalID], 60)
-        write_str_len_validator([SigridMetadata.remark], 300)
-        write_number_validator([SigridMetadata.inProductionSince], 1960, date.today().year)
+    def write_data_validators(ws: Worksheet, num_systems=5000):
+        writer = _MetadataValidatorWriter(ws, num_systems)
+        writer.choices(SigridMetadata.valid_entries)
+        writer.str_len([SigridMetadata.displayName, SigridMetadata.divisionName, SigridMetadata.externalID], 60)
+        writer.str_len([SigridMetadata.remark], 300)
+        writer.whole_number([SigridMetadata.inProductionSince], 1960, date.today().year)

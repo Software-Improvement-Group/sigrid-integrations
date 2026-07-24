@@ -1,6 +1,7 @@
 import csv
 import json
 import time
+from dataclasses import dataclass
 from typing import Dict, Optional, List
 
 from openpyxl import Workbook
@@ -19,6 +20,15 @@ from SigridSystemMetadata.Users.SigridUser import SigridUser
 from Utils.ExcelUtils import set_up_worksheet
 
 MENDIX_ONBOARDING_DELAY=10
+
+
+@dataclass
+class MendixOnboardingOptions:
+    pat: Optional[str] = None
+    username: Optional[str] = None
+    dry_run: bool = False
+    output_file: Optional[str] = None
+
 
 class SigridCustomer:
     def __init__(self, customer: str, token: str, base_url=None):
@@ -117,62 +127,68 @@ class SigridCustomer:
                 self.systems[sys_name] = SigridSystem(self.customer, sys_name, self.token, base_url=self.base_url)
             self.systems[sys_name].set_metadata(metadata_dict)
 
-    def onboard_mendix_from_excel(self, xlsx_file, pat: Optional[str] = None, username: Optional[str] = None,
-                                  dry_run=False, output_file: Optional[str] = None):
+    def onboard_mendix_from_excel(self, xlsx_file, options: 'MendixOnboardingOptions'):
         header_row, rows = set_up_worksheet(xlsx_file)
-        def onboard_single_mendix_row(row) -> Optional[dict]:
-            data = [x.value for x in row]
-            full_data_dict = dict(zip(header_row, data))
-            app_name = full_data_dict["systemName"]
-            app_id = full_data_dict["externalID"] if "externalID" in full_data_dict else full_data_dict["appId"]
-            uname = username if username is not None else full_data_dict["userName"] if "userName" in full_data_dict.keys() else None
-            mendix_pat = pat if pat is not None else full_data_dict["mendixToken"]
-            team_server_branch = full_data_dict["teamServerBranch"]
-
-            if not (app_name and app_id and mendix_pat):
-                print(f"Not onboarding one of appName {app_name} app_id {app_id} uname {uname} mendix_pat {mendix_pat} missing.")
-                return
-
-            cmd = SigridOnboardQSMCommand(customer=self.customer,
-                                          token=self.token,
-                                          user_name=uname,
-                                          mendix_token=mendix_pat,
-                                          app_id=app_id,
-                                          app_name=app_name,
-                                          team_server_branch=team_server_branch,
-                                          base_url=self.base_url)
-
-            result = cmd.do_request(dry_run=dry_run)
-            if result is not None and (result.status_code >= 300 or result.status_code < 200):
-                print(f'Error: while onboarding system {app_name} got status code {result.status_code} '
-                      f'with body {result.content.decode()}')
-            elif result is not None:
-                res = result.content.decode()
-                print(f'Success: while onboarding system {app_name} got status code {result.status_code} '
-                      f'with body {res}')
-                return json.loads(res)
-
-            return None
-
         outputs: List[dict] = []
 
-        for r in rows:
-            output = onboard_single_mendix_row(r)
+        for row in rows:
+            params = self._parse_mendix_row(header_row, row, options)
+            if params is None:
+                continue
+            output = self._onboard_single_system(params, options.dry_run)
             if output is not None:
                 outputs.append(output)
             # sleep to avoid overloading the onboarding API
-            if not dry_run:
+            if not options.dry_run:
                 time.sleep(MENDIX_ONBOARDING_DELAY)
 
-        if output_file is not None:
-            wb = Workbook()
-            mainsheet = wb.active
-            mainsheet.title = f'{self.customer}_Onboarded_Systems'
-            mainsheet.append(['customerName', 'systemName'])
-            for output in outputs:
-                mainsheet.append([output['customerName'], output['systemName']])
-            wb.save(output_file)
-            wb.close()
+        if options.output_file is not None:
+            self._write_onboarding_results(outputs, options.output_file)
+
+    @staticmethod
+    def _parse_mendix_row(header_row, row, options: 'MendixOnboardingOptions') -> Optional[dict]:
+        full_data_dict = dict(zip(header_row, [x.value for x in row]))
+        app_name = full_data_dict.get("systemName")
+        app_id = full_data_dict.get("externalID") or full_data_dict.get("appId")
+        uname = options.username or full_data_dict.get("userName")
+        mendix_pat = options.pat or full_data_dict.get("mendixToken")
+        team_server_branch = full_data_dict.get("teamServerBranch", '')
+
+        if not (app_name and app_id and mendix_pat):
+            # Note: never log mendix_pat - it is a secret.
+            print(f"Not onboarding system '{app_name}' (id '{app_id}', user '{uname}'): "
+                  f"a required field (systemName, externalID/appId or mendixToken) is missing.")
+            return None
+
+        return dict(user_name=uname, mendix_token=mendix_pat, app_id=app_id,
+                    app_name=app_name, team_server_branch=team_server_branch)
+
+    def _onboard_single_system(self, params: dict, dry_run: bool) -> Optional[dict]:
+        cmd = SigridOnboardQSMCommand(customer=self.customer, token=self.token, base_url=self.base_url, **params)
+        result = cmd.do_request(dry_run=dry_run)
+        if result is None:
+            return None
+
+        app_name = params["app_name"]
+        if result.status_code >= 300 or result.status_code < 200:
+            print(f'Error: while onboarding system {app_name} got status code {result.status_code} '
+                  f'with body {result.content.decode()}')
+            return None
+
+        res = result.content.decode()
+        print(f'Success: while onboarding system {app_name} got status code {result.status_code} '
+              f'with body {res}')
+        return json.loads(res)
+
+    def _write_onboarding_results(self, outputs: List[dict], output_file: str):
+        wb = Workbook()
+        mainsheet = wb.active
+        mainsheet.title = f'{self.customer}_Onboarded_Systems'
+        mainsheet.append(['customerName', 'systemName'])
+        for output in outputs:
+            mainsheet.append([output['customerName'], output['systemName']])
+        wb.save(output_file)
+        wb.close()
 
     #USER MANAGEMENT
 
