@@ -1,6 +1,6 @@
 import json
 from json import JSONDecodeError
-from typing import List, Any, Dict
+from typing import List, Any
 
 from openpyxl.worksheet.worksheet import Worksheet
 

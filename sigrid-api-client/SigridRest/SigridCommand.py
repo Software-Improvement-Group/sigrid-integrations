@@ -12,13 +12,13 @@ def check_error_code(response: Response, data_expected=False):
     if response.status_code == 401 or response.status_code == 403:
         raise RuntimeError(f'Authorization error {response.status_code} - check your Sigrid CI token and customer/system parameters.')
     if response.status_code == 404:
-        raise RuntimeError(f'Sigrid returned 404')
+        raise RuntimeError('Sigrid returned 404')
     if response.status_code >= 400:
         raise RuntimeError(f'Sigrid returned {response.status_code}. Text:\n {response.text}')
     if response.status_code >= 300:
         print(f'Sigrid returned unexpected code {response.status_code}. Text:\n {response.text}')
     if response.status_code == 204 and data_expected:
-        raise RuntimeError(f'Sigrid returned 204 - double-check your customer/system parameters.')
+        raise RuntimeError('Sigrid returned 204 - double-check your customer/system parameters.')
 
 
 class SigridCommand(ABC):
