@@ -1,5 +1,6 @@
 import json
 from json import JSONDecodeError
+from SigridRest.SigridGetObjectivesCommand import SigridGetObjectivesCommand
 
 
 class SigridObjectives:
@@ -37,4 +38,3 @@ class SigridObjectives:
                                          base_url=self.system.base_url)
         self.parse_json(cmd.do_request())
 
-from SigridRest.SigridGetObjectivesCommand import SigridGetObjectivesCommand

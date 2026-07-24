@@ -13,5 +13,5 @@ class SigridGetMaintainabilityCommand(SigridGetCommand):
         component_level = '' if system == '' or not self.component_level else '/components'
 
         return (self.base_url + "/rest/analysis-results/api/v1/maintainability/{customer}{system}{"
-                "component_level}").format(customer=self.customer, system=system, component_level=component_level)
+                "component_level}").format(customer=customer, system=system, component_level=component_level)
 

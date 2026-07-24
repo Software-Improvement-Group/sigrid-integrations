@@ -18,6 +18,7 @@ from SigridSystemMetadata.Users.SigridGetUsersCommand import SigridGetUsersComma
 from SigridSystemMetadata.Users.SigridUser import SigridUser
 from Utils.ExcelUtils import set_up_worksheet
 
+MENDIX_ONBOARDING_DELAY=10
 
 class SigridCustomer:
     def __init__(self, customer: str, token: str, base_url=None):
@@ -161,7 +162,7 @@ class SigridCustomer:
                 outputs.append(output)
             # sleep to avoid overloading the onboarding API
             if not dry_run:
-                time.sleep(10)
+                time.sleep(MENDIX_ONBOARDING_DELAY)
 
         if output_file is not None:
             wb = Workbook()

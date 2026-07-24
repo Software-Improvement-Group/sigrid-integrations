@@ -3,6 +3,7 @@ from functools import singledispatch
 from typing import Dict, Any, List
 
 from openpyxl.reader.excel import load_workbook
+from openpyxl import Workbook
 
 
 @singledispatch
@@ -102,3 +103,12 @@ def read_rows_as_type(header_row, rows, type_mapping: Dict[str, ExcelTypes]) -> 
 def load_from_excel_as_type(xlsx_file, type_mapping: Dict[str, ExcelTypes]) -> List[Dict[str, Any]]:
     header_row, rows = set_up_worksheet(xlsx_file)
     return read_rows_as_type(header_row, rows, type_mapping)
+
+def create_template_from_array(header_row: List[str], output_file: str):
+    wb = Workbook()
+    mainsheet = wb.active
+    mainsheet.title = f'system_data'
+    mainsheet.append(header_row)
+    wb.save(output_file)
+    wb.close()
+

@@ -8,5 +8,5 @@ class SigridGetObjectivesCommand(SigridGetCommand):
     def get_url(self):
 
         customer, system = self.parse_customer_system()
-        return (self.base_url + "/rest/analysis-results/api/v1/objectives/{customer}/{system}/config").format(customer=self.customer, system=system)
+        return (self.base_url + "/rest/analysis-results/api/v1/objectives/{customer}/{system}/config").format(customer=customer, system=system)
 

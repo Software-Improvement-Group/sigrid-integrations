@@ -3,6 +3,8 @@ import click
 from SigridSystemMetadata.SigridCustomer import SigridCustomer
 
 
+
+
 @click.command()
 @click.option('-c', '--customer', required=True, help='Customer name')
 @click.option('-i', '--input_file', required=True, help='Input Excel file')

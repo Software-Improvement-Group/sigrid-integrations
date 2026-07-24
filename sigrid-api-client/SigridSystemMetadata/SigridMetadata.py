@@ -1,3 +1,4 @@
+import copy
 import json
 from typing import List, Any, Dict, Optional
 from datetime import date
@@ -7,6 +8,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from SigridRest.SigridGetMetadataCommand import SigridGetMetadataCommand
+from Utils.DictUtils import diff_dicts
 from Utils.ExcelUtils import parseType
 
 class SigridMetadata:
@@ -140,28 +142,18 @@ class SigridMetadata:
                                      base_url=self.system.base_url).do_request())
         diff = {}
         if current is None:
-            diff = self.data.copy()
-        if self.data is not None:
-            # find all things in new that were different in old.
-            # we will *not* check the case where something from old is missing from new, we assume
-            # that in this case we don't want to change it.
-            for k, v in self.data.items():
-                try:
-                    if isinstance(v, list):
-                        for entry in v:
-                            if entry not in current[k]:
-                                diff[k] = v
-                                continue
-                    if v != current[k]:
-                        if v == '' and current[k] is None or v is None and current[k] == '':
-                            continue
-                        diff[k] = v
-                except KeyError:
-                    diff[k] = v
+            diff = copy.deepcopy(self.data)
+        elif self.data is not None:
+            diff = diff_dicts(self.data, current)
         return diff
 
     def get_array_of_fields(self) -> List[Any]:
-        return [parseType(self.get_data()[name]) for name in self.field_order]
+        def parseTypeAndCheck(name):
+            if name not in self.get_data():
+                print(f'Warning: {name} not found in metadata response.')
+            return parseType(self.get_data().get(name))
+
+        return [parseTypeAndCheck(name) for name in self.field_order]
 
     @staticmethod
     def write_metadata_header(ws: worksheet):

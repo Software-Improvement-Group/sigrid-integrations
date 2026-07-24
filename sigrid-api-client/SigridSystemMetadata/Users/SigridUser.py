@@ -64,18 +64,18 @@ class SigridUser:
         return user_dict
 
     @classmethod
-    def from_dict(cls, dict: Dict):
-        if SigridUser.ID not in dict:
-            raise KeyError(f'Provided dict {dict} does not contain Sigrid userID and is not valid')
+    def from_dict(cls, data: Dict):
+        if SigridUser.ID not in data:
+            raise KeyError(f'Provided dict {data} does not contain Sigrid userID and is not valid')
         return cls(
-            dict[SigridUser.ID],
-            dict[SigridUser.FIRST_NAME],
-            dict[SigridUser.LAST_NAME],
-            dict[SigridUser.EMAIL],
-            dict[SigridUser.IS_ADMIN],
-            dict[SigridUser.ACCESS_TO_ALL],
-            dict[SigridUser.SYSTEMS],
-            dict[SigridUser.LAST_LOGIN_AT],
+            data[SigridUser.ID],
+            data[SigridUser.FIRST_NAME],
+            data[SigridUser.LAST_NAME],
+            data[SigridUser.EMAIL],
+            data[SigridUser.IS_ADMIN],
+            data[SigridUser.ACCESS_TO_ALL],
+            data[SigridUser.SYSTEMS],
+            data[SigridUser.LAST_LOGIN_AT],
         )
 
     @classmethod

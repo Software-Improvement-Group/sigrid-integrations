@@ -8,5 +8,5 @@ class SigridGetSecurityResultsCommand(SigridGetCommand):
     def get_url(self):
 
         customer, system = self.parse_customer_system()
-        return (self.base_url + "/rest/analysis-results/api/v1/security-findings/{customer}/{system}").format(customer=self.customer, system=system)
+        return (self.base_url + "/rest/analysis-results/api/v1/security-findings/{customer}/{system}").format(customer=customer, system=system)
 

@@ -1,5 +1,4 @@
 from abc import ABC
-from tabnanny import check
 from typing import Union, Optional
 
 import requests
@@ -13,7 +12,6 @@ class SigridPatchCommand(SigridBaseUpdateCommand, ABC):
     def __init__(self, customer: str, token: str, payload: Union[dict, str], system: Optional[str] = None,
                  base_url=None):
         super().__init__(customer, token, payload, system, base_url=base_url)
-        self._request = requests.patch
 
     def do_request(self, dry_run=False) -> Optional[Response]:
         if self.payload is None or self.payload == '{}':
