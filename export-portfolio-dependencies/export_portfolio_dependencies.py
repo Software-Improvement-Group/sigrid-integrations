@@ -114,6 +114,7 @@ def process_all_systems(systems: List[Dict]) -> List[Dict]:
 
     for component in all_components.values():
         component['systems'] = ', '.join(sorted(component['systems']))
+        component.pop('systemName', None)
 
     return list(all_components.values())
 
