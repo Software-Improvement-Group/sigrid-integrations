@@ -4,6 +4,7 @@ Exports data from Sigrid's [Architecture Quality](https://docs.sigrid-says.com/c
 so that it can be processed elsewhere. The following export formats are available:
 
 - [JSON](https://docs.sigrid-says.com/integrations/sigrid-api-documentation.html#architecture-quality-data)
+- CSV (top-level component dependencies, as `from`, `to`, `weight`, `type` rows)
 - [Graphviz](https://www.graphviz.org)
 
 ## Prerequisites
@@ -25,7 +26,7 @@ This script takes the following arguments:
 |------------------|----------------------------------------------------------------------------------------------------|
 | `--customer`     | Your Sigrid customer name.                                                                         |
 | `--system`       | Your Sigrid system name.                                                                           |
-| `--format`       | Export format, one of `json`, `dot`, `png`, `pdf`.                                                 |
+| `--format`       | Export format, one of `json`, `csv`, `dot`, `png`, `pdf`.                                          |
 | `--out`          | Output directory.                                                                                  |
 | `--entanglement` | (Optional) Color-codes every dependency in the diagram based on the Component Entanglement metric. |
 

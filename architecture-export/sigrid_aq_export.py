@@ -21,6 +21,7 @@ import urllib.request
 from argparse import ArgumentParser
 
 from sigridaq.architecture_graph import ArchitectureGraph
+from sigridaq.csv_export import exportCsv
 from sigridaq.graphviz import exportDot
 
 
@@ -44,7 +45,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Exports data from Sigrid's Architecture Quality.")
     parser.add_argument("--customer", type=str, required=True, help="Sigrid customer name.")
     parser.add_argument("--system", type=str, required=True, help="Sigrid customer name.")
-    parser.add_argument("--format", choices=["json", "dot", "pdf", "png"], required=True, help="Export format.")
+    parser.add_argument("--format", choices=["json", "csv", "dot", "pdf", "png"], required=True, help="Export format.")
     parser.add_argument("--entanglement", action="store_true", help="Color diagram based on Component Entanglement.")
     parser.add_argument("--out", type=str, required=True, help="Output directory.")
     parser.add_argument("--sigridurl", type=str, default="https://sigrid-says.com")
@@ -64,6 +65,9 @@ if __name__ == "__main__":
     if args.format == "json":
         with open(f"{outputDir}/{args.customer}-{args.system}-architecture.json", "w", encoding="utf8") as f:
             json.dump(architectureGraph, f, indent=2)
+    elif args.format == "csv":
+        csvFile = f"{outputDir}/{args.customer}-{args.system}-architecture.csv"
+        exportCsv(architectureGraph, csvFile)
     else:
         dotFile = f"{outputDir}/{args.customer}-{args.system}-architecture.dot"
         exportDot(architectureGraph, dotFile, args.format)
