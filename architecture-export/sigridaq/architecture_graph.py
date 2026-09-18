@@ -54,3 +54,9 @@ class ArchitectureGraph:
 
     def countDependencies(self, source, target):
         return sum(dependency["count"] for dependency in self.findDependencies(source, target))
+
+    def countDependenciesByType(self, source, target):
+        counts = defaultdict(int)
+        for dependency in self.findDependencies(source, target):
+            counts[dependency["type"]] += dependency["count"]
+        return counts
