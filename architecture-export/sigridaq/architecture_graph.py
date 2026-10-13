@@ -39,6 +39,16 @@ class ArchitectureGraph:
     def getTopLevelComponents(self):
         topLevel = [self.systemElements[childId] for childId in self.children[self.systemLevel["id"]]]
         return [se for se in topLevel if se["type"] == "CODE_COMPONENT"]
+        
+    def findAllHierarchyDependencies(self):
+        return [
+            dependency
+            for dependency in self.graph["dependencies"]
+            if dependency["type"] in self.HIERARCHY_DEPENDENCIES
+        ]
+        
+    def findAllCallDependencies(self):
+        return [dependency for dependency in self.graph["dependencies"] if dependency["type"] in self.CALL_DEPENDENCIES]
 
     def findDependencies(self, source, target):
         if source["id"] == target["id"]:
@@ -47,10 +57,9 @@ class ArchitectureGraph:
         sourceHierarchy = self.crawlHierarchy(source["id"])
         targetHierarchy = self.crawlHierarchy(target["id"])
 
-        for dependency in self.graph["dependencies"]:
-            if dependency["type"] in self.CALL_DEPENDENCIES:
-                if dependency["sourceElementId"] in sourceHierarchy and dependency["targetElementId"] in targetHierarchy:
-                    yield dependency
+        for dependency in self.findAllCallDependencies():
+            if dependency["sourceElementId"] in sourceHierarchy and dependency["targetElementId"] in targetHierarchy:
+                yield dependency
 
     def countDependencies(self, source, target):
         return sum(dependency["count"] for dependency in self.findDependencies(source, target))
