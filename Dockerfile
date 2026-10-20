@@ -8,7 +8,8 @@ COPY ldap-group-sync/ /integrations/ldap-group-sync
 COPY objectives-report/ /integrations/objectives-report
 COPY osh-findings/ /integrations/osh-findings
 COPY polarion-integration/ /integrations/polarion-integration
-RUN apk add --no-cache \
+RUN apk upgrade --no-cache \
+    && apk add --no-cache \
         build-base \
         git \
         graphviz \
