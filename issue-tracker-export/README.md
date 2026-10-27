@@ -23,7 +23,7 @@ The following issue trackers are supported:
 You can export your GitHub issues from your pipeline using these scripts. Depending on your environment, you can
 either clone this repository and then run the script, or you can run the script via the Docker container.
 
-    ./export_github_issues --github-api-url https://api.github.com --org mycompany --repo myrepo
+    python[3] export_github_issues --github-api-url https://api.github.com --org mycompany --repo myrepo
 
 The script requires an environment variable called `GITHUB_API_TOKEN`, which should be a
 [fine-grained personal access token for GitHub](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#fine-grained-personal-access-tokens)
