@@ -16,7 +16,7 @@ The following issue trackers are supported:
 ## Prerequisites
 
 - These scripts require Python 3.9+. 
-- There are no additional dependencies.
+- you may need to install the `dateutil` library with `pip install python-dateutil` or `py -m pip install python-dateutil`.
 
 ## Usage for GitHub
 
