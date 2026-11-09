@@ -14,15 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 import sys
-import urllib.request
 from argparse import ArgumentParser
 from typing import Iterator
 from tabulate import tabulate
 
 from sigridaq.architecture_graph import ArchitectureGraph
+from sigridaq.sigrid_api import fetchArchitectureGraph
 
 
 QUALIFICATIONS = {
@@ -31,14 +30,6 @@ QUALIFICATIONS = {
 }
 
 
-def fetchArchitectureGraph(sigridURL: str, customer: str, system: str) -> ArchitectureGraph:
-    request = urllib.request.Request(f"{sigridURL}/rest/analysis-results/api/v1/architecture-quality/{customer}/{system}/raw")
-    request.add_header("Accept", "application/json")
-    request.add_header("Authorization", f"Bearer {os.environ['SIGRID_CI_TOKEN']}".encode("utf8"))
-    with urllib.request.urlopen(request) as response:
-        return ArchitectureGraph(json.load(response))
-        
-        
 def locateArchitectureFindings(architectureGraph: ArchitectureGraph) -> Iterator[tuple[str, str, str]]:
     fileMap = {se["id"]: se for se in architectureGraph.graph["systemElements"] if se["type"] == "FILE"}
     componentMap = {se["id"]: se for se in architectureGraph.graph["systemElements"] if se["type"] == "CODE_COMPONENT"}
@@ -80,7 +71,7 @@ def formatLocation(file: dict, lines: list[list[int]]) -> str:
 if __name__ == "__main__":
     parser = ArgumentParser(description="Prints all findings from Sigrid's Architecture Quality to stdout.")
     parser.add_argument("--customer", type=str, required=True, help="Sigrid customer name.")
-    parser.add_argument("--system", type=str, required=True, help="Sigrid customer name.")
+    parser.add_argument("--system", type=str, required=True, help="Sigrid system name.")
     parser.add_argument("--sigridurl", type=str, default="https://sigrid-says.com")
     args = parser.parse_args()
 

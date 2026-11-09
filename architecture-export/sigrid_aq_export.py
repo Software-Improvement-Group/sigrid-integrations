@@ -17,28 +17,11 @@
 import json
 import os
 import sys
-import urllib.request
 from argparse import ArgumentParser
 
-from sigridaq.architecture_graph import ArchitectureGraph
-from sigridaq.csv_export import exportCsv
+from sigridaq.csv_export import exportDependencies
 from sigridaq.graphviz import exportDot
-
-
-def fetchArchitectureGraph(sigridURL, customer, system):
-    request = urllib.request.Request(f"{sigridURL}/rest/analysis-results/api/v1/architecture-quality/{customer}/{system}/raw")
-    request.add_header("Accept", "application/json")
-    request.add_header("Authorization", f"Bearer {os.environ['SIGRID_CI_TOKEN']}".encode("utf8"))
-    with urllib.request.urlopen(request) as response:
-        return ArchitectureGraph(json.load(response))
-
-
-def fetchComponentEntanglement(sigridURL, customer, system):
-    request = urllib.request.Request(f"{sigridURL}/rest/analysis-results/api/v1/refactoring-candidates/{customer}/{system}/componentEntanglement")
-    request.add_header("Accept", "application/json")
-    request.add_header("Authorization", f"Bearer {os.environ['SIGRID_CI_TOKEN']}".encode("utf8"))
-    with urllib.request.urlopen(request) as response:
-        return json.load(response)["refactoringCandidates"]
+from sigridaq.sigrid_api import fetchArchitectureGraph, fetchComponentEntanglement
 
 
 if __name__ == "__main__":
@@ -67,7 +50,7 @@ if __name__ == "__main__":
             json.dump(architectureGraph, f, indent=2)
     elif args.format == "csv":
         csvFile = f"{outputDir}/{args.customer}-{args.system}-architecture.csv"
-        exportCsv(architectureGraph, csvFile)
+        exportDependencies(architectureGraph, csvFile)
     else:
         dotFile = f"{outputDir}/{args.customer}-{args.system}-architecture.dot"
         exportDot(architectureGraph, dotFile, args.format)

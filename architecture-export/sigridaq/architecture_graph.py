@@ -36,10 +36,13 @@ class ArchitectureGraph:
             hierarchy = hierarchy.union(self.crawlHierarchy(childId))
         return hierarchy
 
+    def getAllComponents(self):
+        return [se for se in self.graph["systemElements"] if se["type"] == "CODE_COMPONENT"]
+
     def getTopLevelComponents(self):
         topLevel = [self.systemElements[childId] for childId in self.children[self.systemLevel["id"]]]
         return [se for se in topLevel if se["type"] == "CODE_COMPONENT"]
-        
+
     def findAllHierarchyDependencies(self):
         return [
             dependency

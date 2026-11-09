@@ -15,7 +15,21 @@
 import csv
 
 
-def exportCsv(architectureGraph, csvFile):
+def exportComponentHotspots(components, csvFile):
+    with open(csvFile, "w", encoding="utf8", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Component", "Lines of code", "Average weekly churn", "External dependencies", "Dependent components"])
+
+        for component in components:
+            loc = component["measurementValues"].get("LINES_OF_CODE") or 0
+            averageChurn = component["measurementTimeSeries"].get("CHURN", {}).get("averageValue", 0)
+            dependencies = component["measurementValues"].get("COMPONENT_COUPLING") or 0
+            dependentComponents = component["measurementValues"].get("COMPONENT_ADJACENCY") or 0
+            if loc > 0:
+                writer.writerow([component["name"], int(loc), int(averageChurn), int(dependencies), int(dependentComponents)])
+
+
+def exportDependencies(architectureGraph, csvFile):
     with open(csvFile, "w", encoding="utf8", newline="") as f:
         writer = csv.writer(f)
         writer.writerow(["from", "to", "weight", "type"])

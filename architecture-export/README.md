@@ -5,7 +5,7 @@ so that it can be processed elsewhere. The following export formats are availabl
 
 - [JSON](https://docs.sigrid-says.com/integrations/sigrid-api-documentation.html#architecture-quality-data)
 - CSV (top-level component dependencies, as `from`, `to`, `weight`, `type` rows)
-- [Graphviz](https://www.graphviz.org)
+- [Graphviz](https://www.graphviz.org) (only if you want to generate diagrams)
 
 ## Prerequisites
 
@@ -14,11 +14,11 @@ so that it can be processed elsewhere. The following export formats are availabl
   - This token needs to be available as the environment variable `SIGRID_CI_TOKEN`.
 - If you want to use the PDF or PNG export, you will need to have Graphviz installed.
 
-## Usage
+## Exporting the Sigrid architecture graph
 
 Assuming you meet the prerequisites listed above, you can run the script:
 
-    python sigrid_aq_export.py --customer mycompany --system mysystem --format dot --out ~/Desktop
+    python3 sigrid_aq_export.py --customer mycompany --system mysystem --format dot --out ~/Desktop
 
 This script takes the following arguments:
 
@@ -29,6 +29,22 @@ This script takes the following arguments:
 | `--format`       | Export format, one of `json`, `csv`, `dot`, `png`, `pdf`.                                          |
 | `--out`          | Output directory.                                                                                  |
 | `--entanglement` | (Optional) Color-codes every dependency in the diagram based on the Component Entanglement metric. |
+
+## Exporting architecture findings
+
+Sigrid CI, the Sigrid IDE integrations, and Sigrid Axis give you concrete feedback on where you can improve your
+architecture. If you want to obtain this data ad-hoc, you can use the following script:
+
+    python3 sigrid_aq_findings.py --customer mycompany --system mysystem
+
+## Exporting architecture hotspots (Beta)
+
+An architecture "hotspot" is an area that has high development activity *and* is having structural architecture issues.
+We are experimenting with using architecture hotspots to prioritize issues and drive architecture evolution. 
+This information is not yet available in Sigrid, but you can use the following script to export the data for your
+system:
+
+    python3 sigrid_aq_hotspots.py --customer mycompany --system mysystem --components <all | toplevel> out test.csv
 
 ## License
 
