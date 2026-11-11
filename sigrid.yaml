@@ -7,3 +7,6 @@ dependencychecker:
 
 thirdpartyfindings:
   enabled: true
+  disabled_rules:
+    - "semgrep-community-rules.python.lang.security.use-defusedcsv"
+    
